@@ -19,6 +19,17 @@ function M.new(mappings)
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
   vim.api.nvim_set_option_value("modifiable", false, { buf = self.buf })
   vim.api.nvim_buf_set_keymap(self.buf, "n", "q", "<cmd>q<CR>", {})
+
+  -- Auto close floating window if you accidentally click outside the window
+  vim.api.nvim_create_autocmd("WinLeave", {
+    callback = function(args)
+      local buf = args.buf
+      if buf == self.buf then
+        self:close()
+      end
+    end
+  })
+
   return self
 end
 
@@ -41,9 +52,10 @@ function HelpPopup:open()
 end
 
 function HelpPopup:close()
-  if self.win and vim.api.nvim_buf_is_valid(self.win) then
+  if self.win and vim.api.nvim_win_is_valid(self.win) then
     vim.api.nvim_win_close(self.win, true)
   end
 end
+
 
 return M

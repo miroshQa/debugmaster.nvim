@@ -43,7 +43,6 @@ function Dapi:open()
   local ok, res = pcall(vim.api.nvim_open_win, self.scopes_buf, false, {
     split = "right",
   })
-  print(ok, res)
   if ok then
     self.main_win = res
   end
