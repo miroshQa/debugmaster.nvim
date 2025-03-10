@@ -12,6 +12,7 @@ local mappings = config.mappings
 ---@field callback function?
 ---@field rhs string?
 ---@field desc string?
+---@field silent boolean?
 
 ---@type table<string, dm.OrignalKeymap>
 local originals = {
@@ -34,6 +35,7 @@ local function save_original_settings()
      originals[key].callback = orig.callback
      originals[key].rhs = orig.rhs
      originals[key].desc = orig.desc
+     originals[key].silent = orig.silent
     end
   end
 
@@ -48,7 +50,7 @@ function M.activate()
   M.active = true
   for _, mapping in pairs(mappings) do
     local action = mapping.action
-    vim.keymap.set("n", mapping.key, action)
+    vim.keymap.set("n", mapping.key, action, {nowait = mapping.nowait})
   end
 
   guicursor_original = vim.opt.guicursor._value
@@ -62,7 +64,10 @@ function M.disable()
     local key = mapping.key
     local orig = originals[key]
     local rhs = orig.callback or orig.rhs or key
-    vim.keymap.set("n", key, rhs, {desc = orig.desc})
+    vim.keymap.set("n", key, rhs, {
+      desc = orig.desc,
+      silent = orig.silent,
+    })
   end
   vim.opt.guicursor = guicursor_original
 end

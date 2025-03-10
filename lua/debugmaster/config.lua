@@ -1,7 +1,8 @@
 ---@class dm.KeySpec
 ---@field key string
 ---@field action fun()
----@field desc string
+---@field desc string?
+---@field nowait boolean?
 
 ---@class dm.Config
 local config = {
@@ -13,12 +14,22 @@ local config = {
       desc = "Open help"
     },
     toggle_breakpoint = {
-      key = "B",
+      key = "b",
       action = function() require("dap").toggle_breakpoint() end,
       desc = "Toggle breakpoint",
     },
-    continue = {
+    reverse_ui_clockwise = {
       key = "r",
+      action = function() end,
+      desc = "reverse ui layout",
+    },
+    rotate_ui_anti_clockwise = {
+      key = "R",
+      action = function () end,
+    },
+    continue = {
+      key = "c",
+      nowait = true,
       action = function() require("dap").continue() end,
       desc = "Continue"
     },
@@ -53,7 +64,7 @@ local config = {
       desc = "Step back - previous line"
     },
     disable = {
-      key = "<esc>",
+      key = "<Esc>",
       action = function() require("debugmaster.debugmode").disable() end,
       desc = "Disable debug mode"
     },
@@ -79,5 +90,6 @@ local config = {
     -- }
   }
 }
+
 
 return config
