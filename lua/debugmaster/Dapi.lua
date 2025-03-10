@@ -24,34 +24,65 @@ function M.new(term_buf)
   vim.api.nvim_win_close(scopes_win, true)
 
   self.terminal_buf = term_buf
+
+
   return self
 end
 
 function Dapi:toggle()
-  if not self.main_win or not vim.api.nvim_win_is_valid(self.main_win) then
+  if not self.main_win then
     self:open()
   else
     self:close()
   end
 end
 
-function Dapi:open()
+---@param direction "left" | "right" | "above" | "below" | nil Opens right by default if nil
+function Dapi:open(direction)
+  if self.main_win then
+    return
+  end
+  direction = direction or self.direction or "right"
   if not self.scopes_buf then
     return print("Can't toggle dapi. Debug session is not active")
   end
   --  it saves us if we try open it in a float window
   local ok, res = pcall(vim.api.nvim_open_win, self.scopes_buf, false, {
-    split = "right",
+    split = direction,
   })
   if ok then
     self.main_win = res
+    self.direction = direction
+    local id
+    id = vim.api.nvim_create_autocmd("WinClosed", {
+      pattern = tostring(self.main_win),
+      callback = function()
+        self.main_win = nil
+        vim.api.nvim_del_autocmd(id)
+      end
+    })
   end
 end
 
 function Dapi:close()
-  if vim.api.nvim_win_is_valid(self.main_win) then
+  if self.main_win then
     vim.api.nvim_win_close(self.main_win, true)
-    self.main_win = nil
+  end
+end
+
+function Dapi:rotate()
+  if not self.main_win then
+    return
+  end
+  local cur_direction = self.direction
+  self:close()
+  local directions = {"below", "left", "above", "right"}
+  for i, direction in ipairs(directions) do
+    if direction == cur_direction then
+      -- damn lua...
+      local next = directions[i % #directions + 1]
+      self:open(next)
+    end
   end
 end
 

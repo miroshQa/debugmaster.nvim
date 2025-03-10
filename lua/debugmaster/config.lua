@@ -20,12 +20,8 @@ local config = {
     },
     reverse_ui_clockwise = {
       key = "r",
-      action = function() end,
+      action = function() require("debugmaster").dapi:rotate() end,
       desc = "reverse ui layout",
-    },
-    rotate_ui_anti_clockwise = {
-      key = "R",
-      action = function () end,
     },
     continue = {
       key = "c",
