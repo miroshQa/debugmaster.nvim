@@ -3,7 +3,6 @@ local M = {}
 local dap = require("dap")
 local config = require("debugmaster.config")
 local Dapi = require("debugmaster.Dapi")
-local HelpPopup = require("debugmaster.HelpPopup").new(config.mappings)
 local debugmode = require("debugmaster.debugmode")
 
 local dapi = nil

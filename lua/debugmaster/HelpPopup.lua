@@ -14,6 +14,7 @@ function M.new(mappings)
     local indent = string.rep(" ", 10 - #key)
     table.insert(lines, string.format("%s %s  %s", key, indent, spec.desc))
   end
+  table.sort(lines, function (a, b) return a < b end)
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
   vim.api.nvim_set_option_value("modifiable", false, { buf = self.buf })
   vim.api.nvim_buf_set_keymap(self.buf, "n", "q", "<cmd>q<CR>", {})
