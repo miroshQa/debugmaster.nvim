@@ -5,7 +5,7 @@ local config = require("debugmaster.config")
 local Dapi = require("debugmaster.Dapi")
 local debugmode = require("debugmaster.debugmode")
 
-local dapi = nil
+M.dapi = nil
 local term_buf = nil
 
 dap.defaults.fallback.terminal_win_cmd = function(cfg)
@@ -14,24 +14,24 @@ dap.defaults.fallback.terminal_win_cmd = function(cfg)
 end
 
 vim.keymap.set("n", "<leader>du", function()
-  if dapi then
-    dapi:toggle()
+  if M.dapi then
+    M.dapi:toggle()
   end
 end)
 
 -- Alternatives:
--- 1. Enter
-vim.keymap.set("n", "m", function()
-  debugmode.activate()
+-- 1. Enter, Tab, m
+vim.keymap.set("n", "<Tab>", function()
+  debugmode.toggle()
 end)
 
 dap.listeners.before.launch.dapui_config = function()
-  dapi = Dapi.new(term_buf)
-  dapi:open()
+  M.dapi = Dapi.new(term_buf)
+  M.dapi:open()
 end
 
 dap.listeners.before.event_terminated.dapui_config = function()
-  dapi:close()
+  M.dapi:close()
 end
 
 return M

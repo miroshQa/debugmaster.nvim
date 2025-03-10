@@ -72,4 +72,12 @@ function M.disable()
   vim.opt.guicursor = guicursor_original
 end
 
+function M.toggle()
+  if M.active then
+    M.disable()
+  else
+    M.activate()
+  end
+end
+
 return M

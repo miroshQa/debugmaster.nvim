@@ -39,9 +39,14 @@ function Dapi:open()
   if not self.scopes_buf then
     return print("Can't toggle dapi. Debug session is not active")
   end
-  self.main_win = vim.api.nvim_open_win(self.scopes_buf, false, {
+  --  it saves us if we try open it in a float window
+  local ok, res = pcall(vim.api.nvim_open_win, self.scopes_buf, false, {
     split = "right",
   })
+  print(ok, res)
+  if ok then
+    self.main_win = res
+  end
 end
 
 function Dapi:close()

@@ -83,11 +83,16 @@ local config = {
       action = function() require("debugmaster.utils").gotoBreakpoint("next") end,
       desc = "Go to next breakpoint"
     },
-    -- ["U"] = {
-    --   key = "U",
-    --   action = function() require("debugmaster.Dapi"). end,
-    --   desc = "Toggle ui",
-    -- }
+    toggle_ui = {
+      key = "u",
+      action = function()
+        local dapi = require("debugmaster").dapi
+        if dapi then
+          dapi:toggle()
+        end
+      end,
+      desc = "Toggle ui",
+    }
   }
 }
 

@@ -10,7 +10,8 @@ function M.new(mappings)
   self.buf = vim.api.nvim_create_buf(false, true)
   self.win = nil
   local lines = {}
-  for key, spec in pairs(mappings) do
+  for name, spec in pairs(mappings) do
+    local key = spec.key
     local indent = string.rep(" ", 10 - #key)
     table.insert(lines, string.format("%s %s  %s", key, indent, spec.desc))
   end
