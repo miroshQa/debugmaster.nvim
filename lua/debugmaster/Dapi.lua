@@ -21,7 +21,6 @@ function M.new(term_buf)
   vim.api.nvim_win_close(repl_win, true)
 
   local scopes_buf, scopes_win = scopes.open()
-  print("scopes_buf", scopes_buf)
   self.scopes_buf = scopes_buf
   vim.api.nvim_win_close(scopes_win, true)
 
@@ -32,7 +31,7 @@ function M.new(term_buf)
 end
 
 function Dapi:toggle()
-  if not self.main_win then
+  if not utils.is_win_valid(self.main_win) then
     self:open()
   else
     self:close()
@@ -46,71 +45,68 @@ end
 ---@param opts debugmaster.Dapi.OpenOptions?
 function Dapi:open(opts)
   if not self.scopes_buf then
-    print("scopes_buf in open:", self.scopes_buf)
     return print("Can't open dapi. Debug session is not active")
   end
 
-  opts = opts or {}
-  if self.main_win then
+  if utils.is_win_valid(self.main_win) then
     return
   end
+
+  opts = opts or {}
   local direction = opts.direction or self.direction or "right"
   ---@type vim.api.keyset.win_config
   local cfg = {}
-  if opts.float then
+  local enter = false
+  if opts.float or self.float then
     cfg = utils.make_center_float_win_cfg()
+    self.float = true
+    enter = true
   else
     cfg.split = direction
   end
 
   --  it saves us if we try open it in a float window
-  local ok, res = pcall(vim.api.nvim_open_win, self.scopes_buf, false, cfg)
+  local ok, res = pcall(vim.api.nvim_open_win, self.scopes_buf, enter, cfg)
+  if not ok then
+    return
+  end
 
-  if ok then
-    self.main_win = res
-    self.direction = direction
-    self.float = opts.float
-    local id
-    id = vim.api.nvim_create_autocmd("WinClosed", {
-      pattern = tostring(self.main_win),
-      callback = function()
-        self.main_win = nil
-        vim.api.nvim_del_autocmd(id)
-      end
-    })
+  self.main_win = res
+  self.direction = direction
+
+  if self.float then
+    utils.register_to_close_on_leave(self.main_win)
   end
 end
 
 function Dapi:close()
-  if self.main_win then
+  if utils.is_win_valid(self.main_win) then
     vim.api.nvim_win_close(self.main_win, true)
   end
 end
 
 function Dapi:rotate()
-  if not self.main_win then
+  if not utils.is_win_valid(self.main_win) then
     return
   end
   local cur_direction = self.direction
   self:close()
-  local directions = {"below", "left", "above", "right"}
+  local directions = { "below", "left", "above", "right" }
   for i, direction in ipairs(directions) do
     if direction == cur_direction then
       -- damn lua...
       local next = directions[i % #directions + 1]
-      self:open({direction = next})
+      self:open({ direction = next })
     end
   end
 end
 
 function Dapi:last_pane_to_float()
-  if not self.main_win then
+  if not utils.is_win_valid(self.main_win) then
     return
   end
-  print("before close", self.scopes_buf)
-  Dapi:close()
-  print("after close, before open", self.scopes_buf)
-  Dapi:open({float = true})
+  self:close()
+  self:open({ float = true })
 end
 
 function Dapi:focus_scopes()

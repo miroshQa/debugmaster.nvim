@@ -122,7 +122,7 @@ local config = {
           state.dapi:last_pane_to_float()
         end
       end,
-      desc = "Toggle ui",
+      desc = "Toggle float layout when only one pane is be displayed in floating window",
     },
     evaluate_variable = {
       key = "I",

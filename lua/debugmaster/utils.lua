@@ -51,4 +51,34 @@ function M.make_center_float_win_cfg()
     return cfg
 end
 
+---@param win number
+function M.register_to_close_on_leave(win)
+    local buf = vim.api.nvim_win_get_buf(win)
+    local id
+    id = vim.api.nvim_create_autocmd("WinLeave", {
+      callback = function(args)
+        if not vim.api.nvim_win_is_valid(win) then
+          return vim.api.nvim_del_autocmd(id)
+        end
+
+        if buf == args.buf then
+          print("win lost focus, closing it", win)
+          vim.api.nvim_win_close(win, true)
+          return vim.api.nvim_del_autocmd(id)
+        end
+      end
+    })
+end
+
+--- Like vim.api.is_win_valid but allow you to pass nil
+---@param win number?
+---@return boolean
+function M.is_win_valid(win)
+  if not win then
+    return false
+  else
+    return vim.api.nvim_win_is_valid(win)
+  end
+end
 return M
+

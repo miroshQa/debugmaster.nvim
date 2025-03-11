@@ -8,6 +8,18 @@ local state = require("debugmaster.state")
 
 local term_buf = nil
 
+
+vim.api.nvim_command 'autocmd FileType dap-float nnoremap <buffer><silent> q <cmd>close!<CR>'
+
+-- https://github.com/mfussenegger/nvim-dap/issues/786
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("PromptBufferCtrlwFix", {}),
+  pattern = {"dap-repl"},
+  callback = function()
+    vim.keymap.set("i", "<C-w>", "<C-S-w>", {buffer = true})
+  end
+})
+
 dap.defaults.fallback.terminal_win_cmd = function(cfg)
   term_buf = vim.api.nvim_create_buf(false, false)
   return term_buf, nil
