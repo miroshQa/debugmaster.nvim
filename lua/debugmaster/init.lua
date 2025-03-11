@@ -4,8 +4,8 @@ local dap = require("dap")
 local config = require("debugmaster.config")
 local Dapi = require("debugmaster.Dapi")
 local debugmode = require("debugmaster.debugmode")
+local state = require("debugmaster.state")
 
-M.dapi = nil
 local term_buf = nil
 
 dap.defaults.fallback.terminal_win_cmd = function(cfg)
@@ -14,8 +14,8 @@ dap.defaults.fallback.terminal_win_cmd = function(cfg)
 end
 
 vim.keymap.set("n", "<leader>du", function()
-  if M.dapi then
-    M.dapi:toggle()
+  if state.dapi then
+    state.dapi:toggle()
   end
 end)
 
@@ -26,12 +26,12 @@ vim.keymap.set("n", "<Tab>", function()
 end)
 
 dap.listeners.before.launch.dapui_config = function()
-  M.dapi = Dapi.new(term_buf)
-  M.dapi:open()
+  state.dapi = Dapi.new(term_buf)
+  state.dapi:open()
 end
 
 dap.listeners.before.event_terminated.dapui_config = function()
-  M.dapi:close()
+  state.dapi:close()
 end
 
 return M

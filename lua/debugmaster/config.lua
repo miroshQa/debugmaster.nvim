@@ -1,6 +1,6 @@
 ---@class dm.KeySpec
 ---@field key string
----@field action fun()
+---@field action fun(): string?
 ---@field desc string?
 ---@field nowait boolean?
 
@@ -14,13 +14,18 @@ local config = {
       desc = "Open help"
     },
     toggle_breakpoint = {
-      key = "b",
+      key = "a", -- we want to avoid breaking motions, need to follow this principe and further
       action = function() require("dap").toggle_breakpoint() end,
       desc = "Toggle breakpoint",
     },
     reverse_ui_clockwise = {
       key = "r",
-      action = function() require("debugmaster").dapi:rotate() end,
+      action = function()
+        local state = require("debugmaster.state")
+        if state.dapi then
+          state.dapi:rotate()
+        end
+      end,
       desc = "reverse ui layout",
     },
     continue = {
@@ -29,10 +34,16 @@ local config = {
       action = function() require("dap").continue() end,
       desc = "Continue"
     },
+    reverse_continue = {
+      key = "C",
+      nowait = true,
+      action = function() require("dap").reverse_continue() end,
+      desc = "Continue"
+    },
     terminate = {
-      key = "T",
+      key = "K",
       action = function() require("dap").terminate() end,
-      desc = "Terminate"
+      desc = "Kill (terminate debug)"
     },
     run_to_cursor = {
       key = "R",
@@ -59,6 +70,20 @@ local config = {
       action = function() require("dap").step_back() end,
       desc = "Step back - previous line"
     },
+    search = {
+      key = "/",
+      action = function ()
+        require("debugmaster.debugmode").disable()
+        vim.fn.feedkeys("/", "n")
+      end,
+    },
+    search_backward = {
+      key = "?",
+      action = function()
+          require("debugmaster.debugmode").disable()
+          vim.fn.feedkeys("?", "n")
+        end,
+    },
     disable = {
       key = "<Esc>",
       action = function() require("debugmaster.debugmode").disable() end,
@@ -82,15 +107,31 @@ local config = {
     toggle_ui = {
       key = "u",
       action = function()
-        local dapi = require("debugmaster").dapi
-        if dapi then
-          dapi:toggle()
+        local state = require("debugmaster.state")
+        if state.dapi then
+          state.dapi:toggle()
         end
+      end,
+      desc = "Toggle ui",
+    },
+    last_pane_to_float = {
+      key = "U",
+      action = function()
+        local state = require("debugmaster.state")
+        if state.dapi then
+          state.dapi:last_pane_to_float()
+        end
+      end,
+      desc = "Toggle ui",
+    },
+    evaluate_variable = {
+      key = "I",
+      action = function()
+        pcall(require('dap.ui.widgets').hover)
       end,
       desc = "Toggle ui",
     }
   }
 }
-
 
 return config

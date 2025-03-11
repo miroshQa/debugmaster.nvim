@@ -1,4 +1,5 @@
 local dap = require("dap")
+local utils = require("debugmaster.utils")
 local widgets = require('dap.ui.widgets')
 local repl = require 'dap.repl'
 
@@ -20,6 +21,7 @@ function M.new(term_buf)
   vim.api.nvim_win_close(repl_win, true)
 
   local scopes_buf, scopes_win = scopes.open()
+  print("scopes_buf", scopes_buf)
   self.scopes_buf = scopes_buf
   vim.api.nvim_win_close(scopes_win, true)
 
@@ -37,22 +39,37 @@ function Dapi:toggle()
   end
 end
 
----@param direction "left" | "right" | "above" | "below" | nil Opens right by default if nil
-function Dapi:open(direction)
+---@class debugmaster.Dapi.OpenOptions
+---@field direction "left" | "right" | "above" | "below" | nil Opens right by default if nil
+---@field float boolean? If float specified then it creates float window and ignore direction
+
+---@param opts debugmaster.Dapi.OpenOptions?
+function Dapi:open(opts)
+  if not self.scopes_buf then
+    print("scopes_buf in open:", self.scopes_buf)
+    return print("Can't open dapi. Debug session is not active")
+  end
+
+  opts = opts or {}
   if self.main_win then
     return
   end
-  direction = direction or self.direction or "right"
-  if not self.scopes_buf then
-    return print("Can't toggle dapi. Debug session is not active")
+  local direction = opts.direction or self.direction or "right"
+  ---@type vim.api.keyset.win_config
+  local cfg = {}
+  if opts.float then
+    cfg = utils.make_center_float_win_cfg()
+  else
+    cfg.split = direction
   end
+
   --  it saves us if we try open it in a float window
-  local ok, res = pcall(vim.api.nvim_open_win, self.scopes_buf, false, {
-    split = direction,
-  })
+  local ok, res = pcall(vim.api.nvim_open_win, self.scopes_buf, false, cfg)
+
   if ok then
     self.main_win = res
     self.direction = direction
+    self.float = opts.float
     local id
     id = vim.api.nvim_create_autocmd("WinClosed", {
       pattern = tostring(self.main_win),
@@ -81,9 +98,19 @@ function Dapi:rotate()
     if direction == cur_direction then
       -- damn lua...
       local next = directions[i % #directions + 1]
-      self:open(next)
+      self:open({direction = next})
     end
   end
+end
+
+function Dapi:last_pane_to_float()
+  if not self.main_win then
+    return
+  end
+  print("before close", self.scopes_buf)
+  Dapi:close()
+  print("after close, before open", self.scopes_buf)
+  Dapi:open({float = true})
 end
 
 function Dapi:focus_scopes()

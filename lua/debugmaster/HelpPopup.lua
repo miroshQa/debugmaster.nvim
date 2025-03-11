@@ -1,3 +1,5 @@
+local utils = require("debugmaster.utils")
+
 local M = {}
 
 ---@class debugmaster.HelpPopup
@@ -37,16 +39,7 @@ function HelpPopup:open()
   if self.win and vim.api.nvim_buf_is_valid(self.win) then
     return
   end
-  local height = math.ceil(math.min(vim.o.lines, math.max(20, vim.o.lines - 10)))
-  local width = math.ceil(math.min(vim.o.columns, math.max(80, vim.o.columns - 20)))
-  self.win = vim.api.nvim_open_win(self.buf, true, {
-    relative = "editor",
-    border = "rounded",
-    width = width,
-    height = height,
-    row = math.ceil(vim.o.lines - height) * 0.5 - 1,
-    col = math.ceil(vim.o.columns - width) * 0.5 - 1
-  })
+  self.win = vim.api.nvim_open_win(self.buf, true, utils.make_center_float_win_cfg())
   vim.api.nvim_set_option_value("number", false, { win = self.win })
   vim.api.nvim_set_option_value("relativenumber", false, { win = self.win })
 end

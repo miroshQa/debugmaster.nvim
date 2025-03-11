@@ -36,4 +36,19 @@ function M.gotoBreakpoint(dir)
 	vim.cmd(("buffer +%s %s"):format(nextPoint.line, nextPoint.bufnr))
 end
 
+function M.make_center_float_win_cfg()
+  local height = math.ceil(math.min(vim.o.lines, math.max(20, vim.o.lines - 10)))
+  local width = math.ceil(math.min(vim.o.columns, math.max(80, vim.o.columns - 20)))
+  ---@type vim.api.keyset.win_config
+  local cfg = {
+      relative = "editor",
+      border = "rounded",
+      width = width,
+      height = height,
+      row = math.ceil(vim.o.lines - height) * 0.5 - 1,
+      col = math.ceil(vim.o.columns - width) * 0.5 - 1
+    }
+    return cfg
+end
+
 return M
