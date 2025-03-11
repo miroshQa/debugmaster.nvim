@@ -81,6 +81,8 @@ function Dapi:open(opts)
   self.main_win = res
   self.direction = direction
   self.float = float
+  local indent = "    "
+  vim.wo[self.main_win].winbar = string.format("[S]copes %s [R]epl %s [P]rogram output ", indent, indent)
 
   if self.float then
     utils.register_to_close_on_leave(self.main_win)
