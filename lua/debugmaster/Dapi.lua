@@ -23,6 +23,7 @@ function M.new(term_buf)
   local scopes_buf, scopes_win = scopes.open()
   self.scopes_buf = scopes_buf
   vim.api.nvim_win_close(scopes_win, true)
+  vim.api.nvim_buf_set_keymap(scopes_buf, "n", "q", "<cmd>q<CR>", {})
 
   self.terminal_buf = term_buf
 

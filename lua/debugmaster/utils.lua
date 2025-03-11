@@ -62,7 +62,6 @@ function M.register_to_close_on_leave(win)
         end
 
         if buf == args.buf then
-          print("win lost focus, closing it", win)
           vim.api.nvim_win_close(win, true)
           return vim.api.nvim_del_autocmd(id)
         end
