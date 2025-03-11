@@ -1,3 +1,4 @@
 # Neovim modal editor style focused dap interface
 
-# Set of 
+
+# Required version neovim >= 0.10

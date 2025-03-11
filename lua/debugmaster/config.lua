@@ -1,6 +1,6 @@
 ---@class dm.KeySpec
 ---@field key string
----@field action fun(): string?
+---@field action fun()
 ---@field desc string?
 ---@field nowait boolean?
 ---@field group string?
@@ -13,7 +13,7 @@
 ---@type dm.MappingsGroup
 local move_debugger_group = {
   name = "MOVE DEBUGGER",
-  hlgroup = "RED",
+  hlgroup = "ERROR",
   mappings = {
     {
       key = "i",
@@ -58,7 +58,7 @@ local move_debugger_group = {
 ---@type dm.MappingsGroup
 local inspect_group = {
   name = "INSPECT DEBUG STATE",
-  hlgroup = "ORANGE",
+  hlgroup = "STRING",
   mappings = {
     {
       key = "R",
@@ -71,6 +71,18 @@ local inspect_group = {
       desc = "Open repl",
     },
     {
+      key = "O",
+      action = function()
+      end,
+      desc = "Open output (terminal)",
+    },
+    {
+      key = "S",
+      action = function()
+      end,
+      desc = "Open scopes (global, local, etc variables)",
+    },
+    {
       key = "u",
       action = function()
         local state = require("debugmaster.state")
@@ -79,6 +91,13 @@ local inspect_group = {
         end
       end,
       desc = "Toggle ui",
+    },
+    {
+      key = "I",
+      action = function()
+        pcall(require('dap.ui.widgets').hover)
+      end,
+      desc = "Inspect variable",
     },
     {
       key = "U",
@@ -90,20 +109,13 @@ local inspect_group = {
       end,
       desc = "Toggle float layout when only one pane is be displayed in floating window",
     },
-    {
-      key = "I",
-      action = function()
-        pcall(require('dap.ui.widgets').hover)
-      end,
-      desc = "Toggle ui",
-    },
   }
 }
 
 ---@type dm.MappingsGroup
 local misc_group = {
   name = "MISCELANOUS",
-  hlgroup = "GREEN",
+  hlgroup = "TYPE",
   mappings = {
     {
       key = "H",

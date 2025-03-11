@@ -10,11 +10,17 @@ function M.new(groups)
   ---@class debugmaster.HelpPopup
   local self = setmetatable({}, { __index = HelpPopup })
   self.buf = vim.api.nvim_create_buf(false, true)
+  self.hl_ns = vim.api.nvim_create_namespace("HelpPopupHighlightNamespace")
   self.win = nil
   local lines = {}
+  ---@type {index: number, hlgroup: string}[]
+  local highlights = {}
 
   for _, group in ipairs(groups) do
-    table.insert(lines, group.name)
+    if group.name then
+      table.insert(highlights, {index = #lines, hlgroup = group.hlgroup})
+      table.insert(lines, group.name)
+    end
     for _, spec in ipairs(group.mappings) do
       if spec.desc then
         local key = spec.key
@@ -24,9 +30,14 @@ function M.new(groups)
     end
     table.insert(lines, "")
   end
-  table.remove(lines)
 
+  table.remove(lines)
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
+  for _, hl in ipairs(highlights) do
+    vim.api.nvim_buf_add_highlight(self.buf, self.hl_ns, hl.hlgroup, hl.index, 0, -1)
+  end
+
+
   vim.api.nvim_set_option_value("modifiable", false, { buf = self.buf })
   vim.api.nvim_buf_set_keymap(self.buf, "n", "q", "<cmd>q<CR>", {})
 
