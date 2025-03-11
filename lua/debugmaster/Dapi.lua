@@ -1,4 +1,5 @@
 local dap = require("dap")
+local config = require("debugmaster.config")
 local utils = require("debugmaster.utils")
 local widgets = require('dap.ui.widgets')
 local repl = require 'dap.repl'
@@ -9,6 +10,10 @@ local M = {}
 ---@class debugmaster.Dapi
 local Dapi = {}
 
+---@class debugmaster.Dapi.Component
+---@field buf number
+---@field name string
+
 function M.new(term_buf)
   ---@class debugmaster.Dapi
   local self = setmetatable({}, { __index = Dapi })
@@ -16,19 +21,24 @@ function M.new(term_buf)
   self.main_win = nil
   self.direction = "right"
   self.float = false
-  local scopes = widgets.sidebar(widgets.scopes)
 
   local repl_buf, repl_win = repl.open()
-  self.repl_buf = repl_buf
+  ---@type debugmaster.Dapi.Component
+  self.repl = {buf = repl_buf, name = "[R]epl"}
   vim.api.nvim_win_close(repl_win, true)
 
+  local scopes = widgets.sidebar(widgets.scopes)
   local scopes_buf, scopes_win = scopes.open()
-  self.scopes_buf = scopes_buf
+  ---@type debugmaster.Dapi.Component
+  self.scopes = {buf = scopes_buf, name = "[S]copes"}
   vim.api.nvim_win_close(scopes_win, true)
   vim.api.nvim_buf_set_keymap(scopes_buf, "n", "q", "<cmd>q<CR>", {})
 
-  self.terminal_buf = term_buf
+  ---@type debugmaster.Dapi.Component
+  self.terminal = {buf = term_buf, name = "[O]utput"}
 
+  ---@type debugmaster.Dapi.Component
+  self.active = self.scopes
 
   return self
 end
@@ -47,7 +57,7 @@ end
 
 ---@param opts debugmaster.Dapi.OpenOptions?
 function Dapi:open(opts)
-  if not self.scopes_buf then
+  if not self.scopes.buf then
     return print("Can't open dapi. Debug session is not active")
   elseif utils.is_win_valid(self.main_win)  then
     return
@@ -72,7 +82,7 @@ function Dapi:open(opts)
   end
 
   --  it saves us if we try open it in a float window
-  local ok, res = pcall(vim.api.nvim_open_win, self.scopes_buf, enter, cfg)
+  local ok, res = pcall(vim.api.nvim_open_win, self.scopes.buf, enter, cfg)
   if not ok then
     return
   end
@@ -81,12 +91,25 @@ function Dapi:open(opts)
   self.main_win = res
   self.direction = direction
   self.float = float
-  local indent = "    "
-  vim.wo[self.main_win].winbar = string.format("[S]copes %s [R]epl %s [O]tput %s [H]elp", indent, indent, indent)
-
   if self.float then
     utils.register_to_close_on_leave(self.main_win)
   end
+  self:make_waybar()
+end
+
+-- need to rename it to winbar (oops)
+function Dapi:make_waybar()
+  local indent = "    "
+  local waybar_comp = {self.scopes, self.terminal, self.repl}
+  local winbar = {}
+  for _, comp in ipairs(waybar_comp) do
+    local text = comp.name
+    if comp == self.active then
+      text = utils.status_line_apply_hl(text, "Exception")
+    end
+    table.insert(winbar, text)
+  end
+  vim.wo[self.main_win].winbar = table.concat(winbar, indent)
 end
 
 function Dapi:close()
@@ -116,20 +139,25 @@ function Dapi:toggle_layout()
     return
   end
   self:close()
-  print("float = :", not self.float)
   self:open({ float = not self.float })
 end
 
 function Dapi:focus_scopes()
-  vim.api.nvim_win_set_buf(self.main_win, self.scopes_buf)
+  self.active = self.scopes
+  vim.api.nvim_win_set_buf(self.main_win, self.scopes.buf)
+  self:make_waybar()
 end
 
 function Dapi:focus_repl()
-  vim.api.nvim_win_set_buf(self.main_win, self.repl_buf)
+  self.active = self.repl
+  vim.api.nvim_win_set_buf(self.main_win, self.repl.buf)
+  self:make_waybar()
 end
 
 function Dapi:focus_terminal()
-  vim.api.nvim_win_set_buf(self.main_win, self.terminal_buf)
+  self.active = self.terminal
+  vim.api.nvim_win_set_buf(self.main_win, self.terminal.buf)
+  self:make_waybar()
 end
 
 return M

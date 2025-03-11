@@ -4,6 +4,7 @@
 ---@field desc string?
 ---@field nowait boolean?
 ---@field group string?
+---@field waybardesc string?
 
 ---@class dm.MappingsGroup
 ---@field name string? Group name. Not shown in HelpPopup if nil
@@ -61,6 +62,28 @@ local inspect_group = {
   hlgroup = "STRING",
   mappings = {
     {
+      key = "S",
+      action = function()
+        local dapi = require("debugmaster.state").dapi
+        if dapi then
+          dapi:focus_scopes()
+        end
+      end,
+      desc = "Open scopes (global, local, etc variables)",
+      waybardesc = "[S]copes"
+    },
+    {
+      key = "O",
+      action = function()
+        local dapi = require("debugmaster.state").dapi
+        if dapi then
+          dapi:focus_terminal()
+        end
+      end,
+      desc = "Open output (terminal)",
+      waybardesc = "[O]utput"
+    },
+    {
       key = "R",
       action = function()
         local dapi = require("debugmaster.state").dapi
@@ -69,18 +92,14 @@ local inspect_group = {
         end
       end,
       desc = "Open repl",
+      waybardesc = "[R]epl"
     },
     {
-      key = "O",
+      key = "L",
       action = function()
       end,
-      desc = "Open output (terminal)",
-    },
-    {
-      key = "S",
-      action = function()
-      end,
-      desc = "Open scopes (global, local, etc variables)",
+      desc = "Open dap logs (in case something went wrong with debugger)",
+      waybardesc = "[L]og"
     },
     {
       key = "u",
@@ -109,6 +128,16 @@ local inspect_group = {
       end,
       desc = "Toggle float layout when only one pane is be displayed in floating window",
     },
+    {
+      key = ">",
+      action = function()
+        local state = require("debugmaster.state")
+        if state.dapi then
+          state.dapi:rotate()
+        end
+      end,
+      desc = "Rotate layout",
+    },
   }
 }
 
@@ -120,7 +149,8 @@ local misc_group = {
     {
       key = "H",
       action = function() require("debugmaster.debugmode").HelpPopup:open() end,
-      desc = "Open help"
+      desc = "Open help",
+      waybardesc = "[H]elp"
     },
     {
       key = "a", -- we want to avoid breaking motions, need to follow this principe and further
@@ -174,7 +204,6 @@ local nodesc_group = {
     },
   }
 }
-
 
 ---@class dm.Config
 local config = {

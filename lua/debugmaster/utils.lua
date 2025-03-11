@@ -79,5 +79,11 @@ function M.is_win_valid(win)
     return vim.api.nvim_win_is_valid(win)
   end
 end
+
+-- https://www.reddit.com/r/neovim/comments/tz6p7i/how_can_we_set_color_for_each_part_of_statusline/
+---@return string
+function M.status_line_apply_hl(str, hlGroup)
+  return "%#" .. hlGroup .. "#" .. str .. "%*"
+end
 return M
 
