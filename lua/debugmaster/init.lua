@@ -32,8 +32,9 @@ vim.keymap.set("n", "<leader>du", function()
 end)
 
 -- Alternatives:
--- 1. Enter, Tab, m
-vim.keymap.set("n", "<Tab>", function()
+-- 1. Enter, m
+-- Tab is bad because it equals to <C-i>
+vim.keymap.set("n", "m", function()
   debugmode.toggle()
 end)
 

@@ -5,18 +5,20 @@ local M = {}
 ---@class debugmaster.HelpPopup
 local HelpPopup = {}
 
----@param mappings table<string, dm.KeySpec>
+---@param mappings dm.MappingsSpec
 function M.new(mappings)
   ---@class debugmaster.HelpPopup
   local self = setmetatable({}, { __index = HelpPopup })
   self.buf = vim.api.nvim_create_buf(false, true)
   self.win = nil
   local lines = {}
-  for _, spec in pairs(mappings) do
-    if spec.desc then
-      local key = spec.key
-      local indent = string.rep(" ", 10 - #key)
-      table.insert(lines, string.format("%s %s  %s", key, indent, spec.desc))
+  for _, group in pairs(mappings) do
+    for _, spec in pairs(group) do
+      if spec.desc then
+        local key = spec.key
+        local indent = string.rep(" ", 10 - #key)
+        table.insert(lines, string.format("%s %s  %s", key, indent, spec.desc))
+      end
     end
   end
   table.sort(lines, function (a, b) return a < b end)

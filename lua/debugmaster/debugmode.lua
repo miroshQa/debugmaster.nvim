@@ -1,12 +1,11 @@
 local M = {}
 
-local dap = require("dap")
 local config = require("debugmaster.config")
 
 M.HelpPopup = require("debugmaster.HelpPopup").new(config.mappings)
 
 M.active = false
-local mappings = config.mappings
+local mapping_groups = config.mappings
 
 ---@class dm.OrignalKeymap
 ---@field callback function?
@@ -27,18 +26,19 @@ local function save_original_settings()
     lhs_to_map[mapping.lhs] = mapping
   end
 
-  for _, mapping in pairs(mappings) do
-    local key = mapping.key
-    originals[key] = {}
-    local orig = lhs_to_map[key]
-    if orig then
-     originals[key].callback = orig.callback
-     originals[key].rhs = orig.rhs
-     originals[key].desc = orig.desc
-     originals[key].silent = orig.silent
+  for _, group in pairs(mapping_groups) do
+    for _, mapping in pairs(group) do
+      local key = mapping.key
+      originals[key] = {}
+      local orig = lhs_to_map[key]
+      if orig then
+        originals[key].callback = orig.callback
+        originals[key].rhs = orig.rhs
+        originals[key].desc = orig.desc
+        originals[key].silent = orig.silent
+      end
     end
   end
-
   guicursor_original = vim.opt.guicursor._value
 end
 save_original_settings()
@@ -48,26 +48,30 @@ function M.activate()
     return
   end
   M.active = true
-  for _, mapping in pairs(mappings) do
-    local action = mapping.action
-    vim.keymap.set("n", mapping.key, action, {nowait = mapping.nowait})
+  for _, group in pairs(mapping_groups) do
+    for _, mapping in pairs(group) do
+      local action = mapping.action
+      vim.keymap.set("n", mapping.key, action, { nowait = mapping.nowait })
+    end
   end
 
   guicursor_original = vim.opt.guicursor._value
-  vim.api.nvim_set_hl(0, "dCursor", { bg = "#2da84f"})
+  vim.api.nvim_set_hl(0, "dCursor", { bg = "#2da84f" })
   vim.opt.guicursor = "n-v-c-sm:block-dCursor,i-t-ci-ve:ver25,r-cr-o:hor20"
 end
 
 function M.disable()
   M.active = false
-  for _, mapping in pairs(mappings) do
-    local key = mapping.key
-    local orig = originals[key]
-    local rhs = orig.callback or orig.rhs or key
-    vim.keymap.set("n", key, rhs, {
-      desc = orig.desc,
-      silent = orig.silent,
-    })
+  for _, group in pairs(mapping_groups) do
+    for _, mapping in pairs(group) do
+      local key = mapping.key
+      local orig = originals[key]
+      local rhs = orig.callback or orig.rhs or key
+      vim.keymap.set("n", key, rhs, {
+        desc = orig.desc,
+        silent = orig.silent,
+      })
+    end
   end
   vim.opt.guicursor = guicursor_original
 end
