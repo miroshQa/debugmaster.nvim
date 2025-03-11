@@ -2,10 +2,10 @@ local M = {}
 
 local config = require("debugmaster.config")
 
-M.HelpPopup = require("debugmaster.HelpPopup").new(config.mappings)
+M.HelpPopup = require("debugmaster.HelpPopup").new(config.groups)
 
 M.active = false
-local mapping_groups = config.mappings
+local groups = config.groups
 
 ---@class dm.OrignalKeymap
 ---@field callback function?
@@ -26,8 +26,8 @@ local function save_original_settings()
     lhs_to_map[mapping.lhs] = mapping
   end
 
-  for _, group in pairs(mapping_groups) do
-    for _, mapping in pairs(group) do
+  for _, group in ipairs(groups) do
+    for _, mapping in ipairs(group.mappings) do
       local key = mapping.key
       originals[key] = {}
       local orig = lhs_to_map[key]
@@ -48,8 +48,8 @@ function M.activate()
     return
   end
   M.active = true
-  for _, group in pairs(mapping_groups) do
-    for _, mapping in pairs(group) do
+  for _, group in ipairs(groups) do
+    for _, mapping in ipairs(group.mappings) do
       local action = mapping.action
       vim.keymap.set("n", mapping.key, action, { nowait = mapping.nowait })
     end
@@ -62,8 +62,8 @@ end
 
 function M.disable()
   M.active = false
-  for _, group in pairs(mapping_groups) do
-    for _, mapping in pairs(group) do
+  for _, group in ipairs(groups) do
+    for _, mapping in ipairs(group.mappings) do
       local key = mapping.key
       local orig = originals[key]
       local rhs = orig.callback or orig.rhs or key

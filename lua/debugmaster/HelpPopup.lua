@@ -5,23 +5,27 @@ local M = {}
 ---@class debugmaster.HelpPopup
 local HelpPopup = {}
 
----@param mappings dm.MappingsSpec
-function M.new(mappings)
+---@param groups dm.MappingsGroup[]
+function M.new(groups)
   ---@class debugmaster.HelpPopup
   local self = setmetatable({}, { __index = HelpPopup })
   self.buf = vim.api.nvim_create_buf(false, true)
   self.win = nil
   local lines = {}
-  for _, group in pairs(mappings) do
-    for _, spec in pairs(group) do
+
+  for _, group in ipairs(groups) do
+    table.insert(lines, group.name)
+    for _, spec in ipairs(group.mappings) do
       if spec.desc then
         local key = spec.key
         local indent = string.rep(" ", 10 - #key)
         table.insert(lines, string.format("%s %s  %s", key, indent, spec.desc))
       end
     end
+    table.insert(lines, "")
   end
-  table.sort(lines, function (a, b) return a < b end)
+  table.remove(lines)
+
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
   vim.api.nvim_set_option_value("modifiable", false, { buf = self.buf })
   vim.api.nvim_buf_set_keymap(self.buf, "n", "q", "<cmd>q<CR>", {})
@@ -45,6 +49,5 @@ function HelpPopup:close()
     vim.api.nvim_win_close(self.win, true)
   end
 end
-
 
 return M
