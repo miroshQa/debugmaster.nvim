@@ -14,6 +14,8 @@ function M.new(term_buf)
   local self = setmetatable({}, { __index = Dapi })
   self.hints_ns = vim.api.nvim_create_namespace("dapi-hints")
   self.main_win = nil
+  self.direction = "right"
+  self.float = false
   local scopes = widgets.sidebar(widgets.scopes)
 
   local repl_buf, repl_win = repl.open()
@@ -40,27 +42,30 @@ function Dapi:toggle()
 end
 
 ---@class debugmaster.Dapi.OpenOptions
----@field direction "left" | "right" | "above" | "below" | nil Opens right by default if nil
+---@field direction "left" | "right" | "above" | "below" | nil Opens in previous state if nil (right when open first time)
 ---@field float boolean? If float specified then it creates float window and ignore direction
 
 ---@param opts debugmaster.Dapi.OpenOptions?
 function Dapi:open(opts)
   if not self.scopes_buf then
     return print("Can't open dapi. Debug session is not active")
-  end
-
-  if utils.is_win_valid(self.main_win) then
+  elseif utils.is_win_valid(self.main_win)  then
     return
   end
 
+  -- preparing new options (float, direction)
   opts = opts or {}
-  local direction = opts.direction or self.direction or "right"
+  local float = self.float
+  if opts.float ~= nil then
+    float = opts.float
+  end
+  local direction = opts.direction or self.direction
   ---@type vim.api.keyset.win_config
   local cfg = {}
   local enter = false
-  if opts.float or self.float then
+
+  if float then
     cfg = utils.make_center_float_win_cfg()
-    self.float = true
     enter = true
   else
     cfg.split = direction
@@ -72,8 +77,10 @@ function Dapi:open(opts)
     return
   end
 
+  -- Applying new options (if pcall successfull)
   self.main_win = res
   self.direction = direction
+  self.float = float
 
   if self.float then
     utils.register_to_close_on_leave(self.main_win)
@@ -102,12 +109,13 @@ function Dapi:rotate()
   end
 end
 
-function Dapi:last_pane_to_float()
+function Dapi:toggle_layout()
   if not utils.is_win_valid(self.main_win) then
     return
   end
   self:close()
-  self:open({ float = true })
+  print("float = :", not self.float)
+  self:open({ float = not self.float })
 end
 
 function Dapi:focus_scopes()

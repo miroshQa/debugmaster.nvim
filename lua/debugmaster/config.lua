@@ -119,7 +119,7 @@ local config = {
       action = function()
         local state = require("debugmaster.state")
         if state.dapi then
-          state.dapi:last_pane_to_float()
+          state.dapi:toggle_layout()
         end
       end,
       desc = "Toggle float layout when only one pane is be displayed in floating window",
