@@ -31,9 +31,13 @@ vim.keymap.set("n", "<leader>du", function()
   end
 end)
 
-vim.keymap.set("n", config.debug_mode_key, function()
+-- vim.keymap.set("n", config.debug_mode_key, function()
+--   debugmode.toggle()
+-- end)
+
+vim.keymap.set("n", "<leader>d", function()
   debugmode.toggle()
-end)
+end, {nowait = true})
 
 dap.listeners.before.launch.dapui_config = function()
   state.dapi = Dapi.new(term_buf)

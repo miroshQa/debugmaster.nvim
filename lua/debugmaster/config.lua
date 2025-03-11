@@ -209,6 +209,7 @@ local nodesc_group = {
 local config = {
   -- Alternatives:
   -- 1. Enter
+  -- 2. Old good simple <leader>d
   -- Tab is bad because it equals to <C-i>
   debug_mode_key = "m",
 

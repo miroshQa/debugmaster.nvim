@@ -57,7 +57,7 @@ function M.activate()
 
   guicursor_original = vim.opt.guicursor._value
   vim.api.nvim_set_hl(0, "dCursor", { bg = "#2da84f" })
-  vim.opt.guicursor = "n-v-c-sm:block-dCursor,i-t-ci-ve:ver25,r-cr-o:hor20"
+  vim.opt.guicursor = "n-v-sm:block-dCursor,i-t-ci-ve-c:ver25,r-cr-o:hor20"
 end
 
 function M.disable()

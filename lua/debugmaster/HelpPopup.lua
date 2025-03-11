@@ -40,6 +40,10 @@ function M.new(groups)
 
   vim.api.nvim_set_option_value("modifiable", false, { buf = self.buf })
   vim.api.nvim_buf_set_keymap(self.buf, "n", "q", "<cmd>q<CR>", {})
+  vim.api.nvim_buf_create_user_command(self.buf, "CloseHelp", function ()
+    self:close()
+  end, {})
+  vim.api.nvim_buf_set_keymap(self.buf, "n", "<esc>", "<cmd>CloseHelp<CR>", {})
 
   return self
 end

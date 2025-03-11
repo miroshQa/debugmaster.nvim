@@ -91,6 +91,8 @@ function Dapi:open(opts)
   self.main_win = res
   self.direction = direction
   self.float = float
+  vim.api.nvim_set_option_value("number", false, {win = self.main_win})
+  vim.api.nvim_set_option_value("relativenumber", false, {win = self.main_win})
   if self.float then
     utils.register_to_close_on_leave(self.main_win)
   end
