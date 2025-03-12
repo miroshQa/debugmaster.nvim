@@ -2,8 +2,6 @@ local M = {}
 
 local config = require("debugmaster.config")
 
-M.HelpPopup = require("debugmaster.HelpPopup").new(config.groups)
-
 M.active = false
 local groups = config.groups
 

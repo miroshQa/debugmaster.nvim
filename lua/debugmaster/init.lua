@@ -1,13 +1,8 @@
 local M = {}
 
-local dap = require("dap")
 local config = require("debugmaster.config")
-local Dapi = require("debugmaster.Dapi")
 local debugmode = require("debugmaster.debugmode")
-local state = require("debugmaster.state")
-
-local term_buf = nil
-
+require("debugmaster.state")
 
 vim.api.nvim_command 'autocmd FileType dap-float nnoremap <buffer><silent> q <cmd>close!<CR>'
 
@@ -20,41 +15,9 @@ vim.api.nvim_create_autocmd("FileType", {
   end
 })
 
-dap.defaults.fallback.terminal_win_cmd = function(cfg)
-  term_buf = vim.api.nvim_create_buf(false, false)
-  return term_buf, nil
-end
-
-vim.keymap.set("n", "<leader>du", function()
-  if state.dapi then
-    state.dapi:toggle()
-  end
-end)
-
 vim.keymap.set("n", config.debug_mode_key, function()
   debugmode.toggle()
 end, {nowait = true})
 
-dap.listeners.before.launch.dapui_config = function()
-  state.dapi = Dapi.new({term_buf = term_buf})
-  state.dapi:open()
-  term_buf = nil
-end
-
-dap.listeners.before.attach.dapui_config = function()
-  state.dapi = Dapi.new({term_buf = term_buf, attach = true})
-  state.dapi:open()
-  term_buf = nil
-end
-
-dap.listeners.before.event_terminated.dapui_config = function()
-  state.dapi:close()
-  print("dap terminated")
-end
-
-dap.listeners.before.event_exited.dapui_config = function()
-  state.dapi:close()
-  print("dap exited")
-end
 
 return M

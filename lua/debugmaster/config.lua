@@ -66,10 +66,8 @@ local inspect_group = {
     {
       key = "S",
       action = function()
-        local dapi = require("debugmaster.state").dapi
-        if dapi then
-          dapi:focus_scopes()
-        end
+        local state = require("debugmaster.state")
+        state.sidepanel:set_active(state.scopes)
       end,
       desc = "Open scopes (global, local, etc variables)",
       waybardesc = "[S]copes"
@@ -77,10 +75,8 @@ local inspect_group = {
     {
       key = "P",
       action = function()
-        local dapi = require("debugmaster.state").dapi
-        if dapi then
-          dapi:focus_terminal()
-        end
+        local state = require("debugmaster.state")
+        state.sidepanel:set_active(state.terminal)
       end,
       desc = "Open program output (terminal)",
       waybardesc = "[P]rogram"
@@ -88,10 +84,8 @@ local inspect_group = {
     {
       key = "R",
       action = function()
-        local dapi = require("debugmaster.state").dapi
-        if dapi then
-          dapi:focus_repl()
-        end
+        local state = require("debugmaster.state")
+        state.sidepanel:set_active(state.repl)
       end,
       desc = "Open repl",
       waybardesc = "[R]epl"
@@ -107,9 +101,7 @@ local inspect_group = {
       key = "u",
       action = function()
         local state = require("debugmaster.state")
-        if state.dapi then
-          state.dapi:toggle()
-        end
+        state.sidepanel:toggle()
       end,
       desc = "Toggle debugger interface",
     },
@@ -117,9 +109,7 @@ local inspect_group = {
       key = "U",
       action = function()
         local state = require("debugmaster.state")
-        if state.dapi then
-          state.dapi:toggle_layout()
-        end
+        state.sidepanel:toggle_layout()
       end,
       desc = "Toggle float debugger interface mode",
     },
