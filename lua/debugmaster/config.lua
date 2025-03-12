@@ -24,20 +24,31 @@ local move_debugger_group = {
       desc = "Step into",
     },
     {
+      key = "I",
+      action = function() require("dap").step_out() end,
+      desc = "Step out (quit frame)",
+    },
+    {
       key = "o",
       action = function() require("dap").step_over() end,
       desc = "Step over (next line)",
     },
     {
-      key = "q",
-      action = function() require("dap").step_out() end,
-      desc = "Step out (quit current frame)",
+      key = "O",
+      action = function() require("dap").step_back() end,
+      desc = "Step back (prev line)",
     },
     {
       key = "c",
       nowait = true,
       action = function() require("dap").continue() end,
       desc = "Continue or start debug session",
+    },
+    {
+      key = "C",
+      nowait = true,
+      action = function() require("dap").reverse_continue() end,
+      desc = "Reverse continue",
     },
     {
       key = "r",
@@ -64,15 +75,15 @@ local inspect_group = {
       waybardesc = "[S]copes"
     },
     {
-      key = "O",
+      key = "P",
       action = function()
         local dapi = require("debugmaster.state").dapi
         if dapi then
           dapi:focus_terminal()
         end
       end,
-      desc = "Open output (terminal)",
-      waybardesc = "[O]utput"
+      desc = "Open program output (terminal)",
+      waybardesc = "[P]rogram"
     },
     {
       key = "R",
@@ -100,14 +111,7 @@ local inspect_group = {
           state.dapi:toggle()
         end
       end,
-      desc = "Toggle ui",
-    },
-    {
-      key = "I",
-      action = function()
-        pcall(require('dap.ui.widgets').hover)
-      end,
-      desc = "Inspect variable",
+      desc = "Toggle debugger interface",
     },
     {
       key = "U",
@@ -117,18 +121,37 @@ local inspect_group = {
           state.dapi:toggle_layout()
         end
       end,
-      desc = "Toggle float layout when only one pane is be displayed in floating window",
+      desc = "Toggle float debugger interface mode",
+    },
+    {
+      key = "J",
+      action = function()
+        pcall(require('dap.ui.widgets').hover)
+      end,
+      desc = "Inspect variable under cursor",
     },
     {
       key = ">",
       action = function()
+        print("rotate right")
         local state = require("debugmaster.state")
         if state.dapi then
-          state.dapi:rotate()
+          state.dapi:rotate(1)
         end
       end,
       desc = "Rotate layout",
     },
+    {
+      key = "<",
+      action = function()
+        print("Trying to rotate backward")
+        local state = require("debugmaster.state")
+        if state.dapi then
+          state.dapi:rotate(-1)
+        end
+      end,
+      desc = "Rotate layout backward",
+    }
   }
 }
 
@@ -139,7 +162,7 @@ local misc_group = {
   mappings = {
     {
       key = "H",
-      action = function() require("debugmaster.debugmode").HelpPopup:open() end,
+      action = function() require("debugmaster.debugmode").HelpPopup:toggle() end,
       desc = "Open help",
       waybardesc = "[H]elp"
     },
@@ -149,9 +172,9 @@ local misc_group = {
       desc = "Toggle breakpoint",
     },
     {
-      key = "K",
+      key = "Q",
       action = function() require("dap").terminate() end,
-      desc = "Kill (terminate debug)"
+      desc = "Quit debug (terminate debug)"
     },
     {
       key = "M",
@@ -174,11 +197,27 @@ local misc_group = {
 ---@type dm.MappingsGroup
 local nodesc_group = {
   mappings = {
+    -- Debug mode is constant, we don't want to accidentally edit buffer
     {
-      -- Debug mode is constant, we don't want to accidentally edit buffer
-      key = "J",
-      action = function () end
-    }
+      key = "p",
+      action = function() end
+    },
+    {
+      key = "d",
+      action = function() end
+    },
+    {
+      key = "D",
+      action = function() end
+    },
+    {
+      key = "x",
+      action = function() end
+    },
+    {
+      key = "X",
+      action = function() end
+    },
   }
 }
 

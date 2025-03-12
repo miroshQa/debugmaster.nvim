@@ -65,4 +65,12 @@ function HelpPopup:close()
   end
 end
 
+function HelpPopup:toggle()
+  if self.win and vim.api.nvim_win_is_valid(self.win) then
+    vim.api.nvim_win_close(self.win, true)
+  else
+    self:open()
+  end
+end
+
 return M

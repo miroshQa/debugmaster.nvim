@@ -33,6 +33,15 @@ function M.new(params)
   self.repl = {buf = repl_buf, name = "[R]epl"}
   vim.api.nvim_win_close(repl_win, true)
 
+  -- When this autcommand could be removed???
+  -- vim.api.nvim_create_autocmd("BufEnter", {
+  --   callback = function(args)
+  --     if self.repl.buf == args.buf or self.terminal.buf == args.buf then
+  --       debugmode.disable()
+  --     end
+  --   end
+  -- })
+
   local scopes = widgets.sidebar(widgets.scopes)
   local scopes_buf, scopes_win = scopes.open()
   ---@type debugmaster.Dapi.Component
@@ -56,7 +65,7 @@ function M.new(params)
   end
 
   ---@type debugmaster.Dapi.Component
-  self.terminal = {buf = term_buf, name = "[O]utput"}
+  self.terminal = {buf = term_buf, name = "[P]rogram"}
 
   ---@type debugmaster.Dapi.Component
   self.active = self.scopes
@@ -132,6 +141,7 @@ function Dapi:make_waybar()
     end
     table.insert(winbar, text)
   end
+  table.insert(winbar, "[H]elp")
   vim.wo[self.main_win].winbar = table.concat(winbar, indent)
 end
 
@@ -141,7 +151,9 @@ function Dapi:close()
   end
 end
 
-function Dapi:rotate()
+---rotate sidebar clockwise
+---@param step number
+function Dapi:rotate(step)
   if not utils.is_win_valid(self.main_win) then
     return
   end
@@ -150,8 +162,9 @@ function Dapi:rotate()
   local directions = { "below", "left", "above", "right" }
   for i, direction in ipairs(directions) do
     if direction == cur_direction then
-      -- damn lua...
-      local next = directions[i % #directions + 1]
+      -- let's pretend array starts with zero (hence i - 1)
+      local index = ((i - 1) + step) % #directions
+      local next = directions[index + 1]
       self:open({ direction = next })
     end
   end
