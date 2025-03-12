@@ -65,6 +65,7 @@ function Sidepanel:open(opts)
   --  it saves us if we try open it in a float window
   local ok, res = pcall(vim.api.nvim_open_win, self.active.buf, enter, cfg)
   if not ok then
+    print("can't open window", res)
     return
   end
 
@@ -129,8 +130,10 @@ end
 ---@param comp debugmaster.ui.Sidepanel.IComponent
 function Sidepanel:set_active(comp)
   self.active = comp
-  self:open()
-  self:_cook_winbar()
+  if self.win then
+    vim.api.nvim_win_set_buf(self.win, comp.buf)
+    self:_cook_winbar()
+  end
 end
 
 ---@param comp debugmaster.ui.Sidepanel.IComponent

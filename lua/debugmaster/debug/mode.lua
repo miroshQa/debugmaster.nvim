@@ -1,9 +1,8 @@
 local M = {}
 
-local config = require("debugmaster.config")
 
-M.active = false
-local groups = config.groups
+local active = false
+local groups = require("debugmaster.debug.keymaps").groups
 
 ---@class dm.OrignalKeymap
 ---@field callback function?
@@ -42,10 +41,10 @@ end
 save_original_settings()
 
 function M.activate()
-  if M.active then
+  if active then
     return
   end
-  M.active = true
+  active = true
   for _, group in ipairs(groups) do
     for _, mapping in ipairs(group.mappings) do
       local action = mapping.action
@@ -59,7 +58,7 @@ function M.activate()
 end
 
 function M.disable()
-  M.active = false
+  active = false
   for _, group in ipairs(groups) do
     for _, mapping in ipairs(group.mappings) do
       local key = mapping.key
@@ -75,11 +74,15 @@ function M.disable()
 end
 
 function M.toggle()
-  if M.active then
+  if active then
     M.disable()
   else
     M.activate()
   end
+end
+
+function M.is_active()
+  return active
 end
 
 return M
