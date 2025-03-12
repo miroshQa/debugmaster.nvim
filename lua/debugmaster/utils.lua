@@ -37,8 +37,8 @@ function M.gotoBreakpoint(dir)
 end
 
 function M.make_center_float_win_cfg()
-  local height = math.ceil(math.min(vim.o.lines, math.max(20, vim.o.lines - 10)))
-  local width = math.ceil(math.min(vim.o.columns, math.max(80, vim.o.columns - 20)))
+  local height = math.ceil(math.min(vim.o.lines, math.max(20, vim.o.lines - 5)))
+  local width = math.ceil(math.min(vim.o.columns, math.max(80, vim.o.columns - 10)))
   ---@type vim.api.keyset.win_config
   local cfg = {
       relative = "editor",
