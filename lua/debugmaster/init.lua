@@ -31,27 +31,30 @@ vim.keymap.set("n", "<leader>du", function()
   end
 end)
 
--- vim.keymap.set("n", config.debug_mode_key, function()
---   debugmode.toggle()
--- end)
-
-vim.keymap.set("n", "<leader>d", function()
+vim.keymap.set("n", config.debug_mode_key, function()
   debugmode.toggle()
 end, {nowait = true})
 
 dap.listeners.before.launch.dapui_config = function()
-  state.dapi = Dapi.new(term_buf)
+  state.dapi = Dapi.new({term_buf = term_buf})
   state.dapi:open()
+  term_buf = nil
 end
 
 dap.listeners.before.attach.dapui_config = function()
-  print("attached. term buf: ", term_buf)
-  state.dapi = Dapi.new(term_buf)
+  state.dapi = Dapi.new({term_buf = term_buf, attach = true})
   state.dapi:open()
+  term_buf = nil
 end
 
 dap.listeners.before.event_terminated.dapui_config = function()
   state.dapi:close()
+  print("dap terminated")
+end
+
+dap.listeners.before.event_exited.dapui_config = function()
+  state.dapi:close()
+  print("dap exited")
 end
 
 return M

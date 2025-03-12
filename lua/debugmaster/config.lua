@@ -162,11 +162,12 @@ local misc_group = {
       action = function() require("dap").terminate() end,
       desc = "Kill (terminate debug)"
     },
-    {
-      key = "<Esc>",
-      action = function() require("debugmaster.debugmode").disable() end,
-      desc = "Disable debug mode"
-    },
+    -- I think we shoudld enable and disable just using <leader>d
+    -- {
+    --   key = "<Esc>",
+    --   action = function() require("debugmaster.debugmode").disable() end,
+    --   desc = "Disable debug mode"
+    -- },
     {
       key = "M",
       action = function() require("dap").focus_frame() end,
@@ -202,6 +203,11 @@ local nodesc_group = {
         vim.fn.feedkeys("?", "n")
       end,
     },
+    {
+      -- Debug mode is constant, we don't want to accidentally edit buffer
+      key = "J",
+      action = function () end
+    }
   }
 }
 
@@ -211,7 +217,7 @@ local config = {
   -- 1. Enter
   -- 2. Old good simple <leader>d
   -- Tab is bad because it equals to <C-i>
-  debug_mode_key = "m",
+  debug_mode_key = "<leader>d",
 
   ---@type dm.MappingsGroup[]
   groups = {

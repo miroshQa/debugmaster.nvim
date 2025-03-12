@@ -14,7 +14,13 @@ local Dapi = {}
 ---@field buf number
 ---@field name string
 
-function M.new(term_buf)
+---@class debugmaster.DapiParams
+---@field attach boolean?
+---@field term_buf number?
+
+---@param params debugmaster.DapiParams
+function M.new(params)
+  assert(not (params.attach and params.term_buf), "we can get term_buf when attaching wtf?")
   ---@class debugmaster.Dapi
   local self = setmetatable({}, { __index = Dapi })
   self.hints_ns = vim.api.nvim_create_namespace("dapi-hints")
@@ -33,6 +39,21 @@ function M.new(term_buf)
   self.scopes = {buf = scopes_buf, name = "[S]copes"}
   vim.api.nvim_win_close(scopes_win, true)
   vim.api.nvim_buf_set_keymap(scopes_buf, "n", "q", "<cmd>q<CR>", {})
+
+  local term_buf = params.term_buf
+  if not term_buf then
+    term_buf = vim.api.nvim_create_buf(false, true)
+    local lines = {
+      "No terminal was created",
+      "Probably you need to enable some config options for you debug adapter configuration",
+      "Consult with your debug adapter documentation",
+    }
+    if params.attach then
+      lines = {"You attached to the process", "Use your terminal when you program is running"}
+    end
+    vim.api.nvim_buf_set_lines(term_buf, 0, -1, false, lines)
+    vim.api.nvim_set_option_value("modifiable", false, { buf = term_buf })
+  end
 
   ---@type debugmaster.Dapi.Component
   self.terminal = {buf = term_buf, name = "[O]utput"}
@@ -138,7 +159,7 @@ end
 
 function Dapi:toggle_layout()
   if not utils.is_win_valid(self.main_win) then
-    return
+    self:open()
   end
   self:close()
   self:open({ float = not self.float })
