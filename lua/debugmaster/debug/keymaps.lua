@@ -1,3 +1,4 @@
+local utils = require("debugmaster.utils")
 local M = {}
 
 ---@class dm.KeySpec
@@ -69,7 +70,7 @@ local inspect_group = {
       key = "S",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:set_active(state.scopes)
+        state.sidepanel:toggle_active_with_open(state.scopes)
       end,
       desc = "Open scopes (global, local, etc variables)",
       waybardesc = "[S]copes"
@@ -78,7 +79,7 @@ local inspect_group = {
       key = "P",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:set_active(state.terminal)
+        state.sidepanel:toggle_active_with_open(state.terminal)
       end,
       desc = "Open program output (terminal)",
       waybardesc = "[P]rogram"
@@ -87,7 +88,7 @@ local inspect_group = {
       key = "R",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:set_active(state.repl)
+        state.sidepanel:toggle_active_with_open(state.repl)
       end,
       desc = "Open repl",
       waybardesc = "[R]epl"
@@ -185,7 +186,7 @@ local misc_group = {
       key = "H",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:set_active(state.help)
+        state.sidepanel:toggle_active_with_open(state.help)
       end,
       desc = "Open help",
       waybardesc = "[H]elp"
@@ -246,6 +247,5 @@ end
 function M.remove()
   print("not implemented")
 end
-
 
 return M

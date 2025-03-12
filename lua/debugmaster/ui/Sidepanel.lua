@@ -14,7 +14,7 @@ local Sidepanel = {}
 function M.new()
   ---@class debugmaster.ui.Sidepanel
   local self = setmetatable({}, { __index = Sidepanel })
-  self.win = nil
+  self.win = -1 -- always need to check if valid to doing something
   self.direction = "right"
   self.float = false
 
@@ -26,8 +26,12 @@ function M.new()
   return self
 end
 
+function Sidepanel:is_open()
+  return vim.api.nvim_win_is_valid(self.win)
+end
+
 function Sidepanel:toggle()
-  if not utils.is_win_valid(self.win) then
+  if not self:is_open() then
     self:open()
   else
     self:close()
@@ -40,7 +44,7 @@ end
 
 ---@param opts debugmaster.ui.Sidepanel.OpenOptions?
 function Sidepanel:open(opts)
-  if utils.is_win_valid(self.win)  then
+  if self:is_open() then
     return
   end
 
@@ -62,6 +66,7 @@ function Sidepanel:open(opts)
     cfg.split = direction
   end
 
+  vim.api.nvim_buf_set_keymap(self.active.buf, "n", "q", "<cmd>q<CR>", {})
   --  it saves us if we try open it in a float window
   local ok, res = pcall(vim.api.nvim_open_win, self.active.buf, enter, cfg)
   if not ok then
@@ -73,8 +78,8 @@ function Sidepanel:open(opts)
   self.win = res
   self.direction = direction
   self.float = float
-  vim.api.nvim_set_option_value("number", false, {win = self.win})
-  vim.api.nvim_set_option_value("relativenumber", false, {win = self.win})
+  vim.api.nvim_set_option_value("number", false, { win = self.win })
+  vim.api.nvim_set_option_value("relativenumber", false, { win = self.win })
   if self.float then
     utils.register_to_close_on_leave(self.win)
   end
@@ -95,7 +100,7 @@ function Sidepanel:_cook_winbar()
 end
 
 function Sidepanel:close()
-  if utils.is_win_valid(self.win) then
+  if self:is_open() then
     -- may fail if trying to close last window
     pcall(vim.api.nvim_win_close, self.win, true)
   end
@@ -104,7 +109,7 @@ end
 ---rotate sidebar clockwise
 ---@param step number
 function Sidepanel:rotate(step)
-  if not utils.is_win_valid(self.win) then
+  if not vim.api.nvim_win_is_valid(self.win) then
     return
   end
   local cur_direction = self.direction
@@ -121,7 +126,7 @@ function Sidepanel:rotate(step)
 end
 
 function Sidepanel:toggle_layout()
-  if not utils.is_win_valid(self.win) then
+  if not self:is_open() then
     self:open()
   end
   self:close()
@@ -131,10 +136,22 @@ end
 ---@param comp debugmaster.ui.Sidepanel.IComponent
 function Sidepanel:set_active(comp)
   self.active = comp
-  if self.win then
+  if self:is_open() then
     vim.api.nvim_win_set_buf(self.win, comp.buf)
     self:_cook_winbar()
   end
+end
+
+-- if this comp already active and open then it close it
+-- set comp as active and open panel if it is closed
+---@param comp debugmaster.ui.Sidepanel.IComponent
+function Sidepanel:toggle_active_with_open(comp)
+  if self.active == comp and self:is_open() then
+    self:close()
+    return
+  end
+  self:set_active(comp)
+  self:open()
 end
 
 ---@param comp debugmaster.ui.Sidepanel.IComponent
@@ -142,6 +159,4 @@ function Sidepanel:add_component(comp)
   table.insert(self.components, comp)
 end
 
-
 return M
-

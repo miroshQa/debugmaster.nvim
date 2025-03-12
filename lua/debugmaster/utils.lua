@@ -69,17 +69,6 @@ function M.register_to_close_on_leave(win)
     })
 end
 
---- Like vim.api.is_win_valid but allow you to pass nil
----@param win number?
----@return boolean
-function M.is_win_valid(win)
-  if not win then
-    return false
-  else
-    return vim.api.nvim_win_is_valid(win)
-  end
-end
-
 -- https://www.reddit.com/r/neovim/comments/tz6p7i/how_can_we_set_color_for_each_part_of_statusline/
 ---@return string
 function M.status_line_apply_hl(str, hlGroup)
