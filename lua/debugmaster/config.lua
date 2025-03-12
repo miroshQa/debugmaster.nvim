@@ -156,30 +156,24 @@ local inspect_group = {
 }
 
 ---@type dm.MappingsGroup
-local misc_group = {
-  name = "MISCELANOUS",
-  hlgroup = "TYPE",
+local breakpoings_group = {
+  name = "BREAKPOINTS",
+  hlgroup = "Boolean",
   mappings = {
-    {
-      key = "H",
-      action = function() require("debugmaster.debugmode").HelpPopup:toggle() end,
-      desc = "Open help",
-      waybardesc = "[H]elp"
-    },
     {
       key = "a", -- we want to avoid breaking motions, need to follow this principe and further
       action = function() require("dap").toggle_breakpoint() end,
       desc = "Toggle breakpoint",
     },
     {
-      key = "Q",
-      action = function() require("dap").terminate() end,
-      desc = "Quit debug (terminate debug)"
-    },
-    {
-      key = "M",
-      action = function() require("dap").focus_frame() end,
-      desc = "Focus current frame"
+      key = "A",
+      action = function()
+        local condition = vim.fn.input({prompt = "Enter breakpoing condition: "})
+        if condition ~= "" then
+          require("dap").toggle_breakpoint(condition)
+        end
+      end,
+      desc = "Add conditional breakpoint",
     },
     {
       key = "[b",
@@ -191,6 +185,30 @@ local misc_group = {
       action = function() require("debugmaster.utils").gotoBreakpoint("next") end,
       desc = "Go to next breakpoint"
     }
+  },
+}
+
+---@type dm.MappingsGroup
+local misc_group = {
+  name = "MISCELANOUS",
+  hlgroup = "TYPE",
+  mappings = {
+    {
+      key = "H",
+      action = function() require("debugmaster.debugmode").HelpPopup:toggle() end,
+      desc = "Open help",
+      waybardesc = "[H]elp"
+    },
+    {
+      key = "Q",
+      action = function() require("dap").terminate() end,
+      desc = "Quit debug (terminate debug)"
+    },
+    {
+      key = "M",
+      action = function() require("dap").focus_frame() end,
+      desc = "Focus current frame"
+    },
   }
 }
 
@@ -233,6 +251,7 @@ local config = {
   ---@type dm.MappingsGroup[]
   groups = {
     move_debugger_group,
+    breakpoings_group,
     inspect_group,
     misc_group,
     nodesc_group,
