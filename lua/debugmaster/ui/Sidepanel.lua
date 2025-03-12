@@ -96,7 +96,8 @@ end
 
 function Sidepanel:close()
   if utils.is_win_valid(self.win) then
-    vim.api.nvim_win_close(self.win, true)
+    -- may fail if trying to close last window
+    pcall(vim.api.nvim_win_close, self.win, true)
   end
 end
 
