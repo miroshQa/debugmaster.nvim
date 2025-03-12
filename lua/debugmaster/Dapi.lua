@@ -53,9 +53,11 @@ function M.new(params)
   if not term_buf then
     term_buf = vim.api.nvim_create_buf(false, true)
     local lines = {
-      "No terminal was created",
+      "Debug adapter didn't provide terminal",
       "Probably you need to enable some config options for you debug adapter configuration",
       "Consult with your debug adapter documentation",
+      "Check nvim dap issues about your debug adapter",
+      "https://github.com/mfussenegger/nvim-dap/wiki/Debug-Adapter-installation"
     }
     if params.attach then
       lines = {"You attached to the process", "Use your terminal when you program is running"}
@@ -112,7 +114,7 @@ function Dapi:open(opts)
   end
 
   --  it saves us if we try open it in a float window
-  local ok, res = pcall(vim.api.nvim_open_win, self.scopes.buf, enter, cfg)
+  local ok, res = pcall(vim.api.nvim_open_win, self.active.buf, enter, cfg)
   if not ok then
     return
   end
