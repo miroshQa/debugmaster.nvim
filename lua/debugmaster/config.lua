@@ -15,6 +15,8 @@
 local move_debugger_group = {
   name = "MOVE DEBUGGER",
   hlgroup = "ERROR",
+  -- the main goal when developing keymaps for debug mode is to not override normal mode motions
+  -- We want to our DEBUG mode be "constant". So we can freely move and can't edit text
   mappings = {
     {
       key = "i",
@@ -23,30 +25,19 @@ local move_debugger_group = {
     },
     {
       key = "o",
-      action = function() require("dap").step_out() end,
-      desc = "Step out",
-    },
-    {
-      key = "n",
       action = function() require("dap").step_over() end,
-      desc = "Go to the next line (step_over)",
+      desc = "Step over (next line)",
     },
     {
-      key = "N",
-      action = function() require("dap").step_back() end,
-      desc = "Go to the previous line (step_back)",
+      key = "q",
+      action = function() require("dap").step_out() end,
+      desc = "Step out (quit current frame)",
     },
     {
       key = "c",
       nowait = true,
       action = function() require("dap").continue() end,
       desc = "Continue or start debug session",
-    },
-    {
-      key = "C",
-      nowait = true,
-      action = function() require("dap").reverse_continue() end,
-      desc = "Reverse continue",
     },
     {
       key = "r",
@@ -162,12 +153,6 @@ local misc_group = {
       action = function() require("dap").terminate() end,
       desc = "Kill (terminate debug)"
     },
-    -- I think we shoudld enable and disable just using <leader>d
-    -- {
-    --   key = "<Esc>",
-    --   action = function() require("debugmaster.debugmode").disable() end,
-    --   desc = "Disable debug mode"
-    -- },
     {
       key = "M",
       action = function() require("dap").focus_frame() end,
@@ -190,20 +175,6 @@ local misc_group = {
 local nodesc_group = {
   mappings = {
     {
-      key = "/",
-      action = function()
-        require("debugmaster.debugmode").disable()
-        vim.fn.feedkeys("/", "n")
-      end,
-    },
-    {
-      key = "?",
-      action = function()
-        require("debugmaster.debugmode").disable()
-        vim.fn.feedkeys("?", "n")
-      end,
-    },
-    {
       -- Debug mode is constant, we don't want to accidentally edit buffer
       key = "J",
       action = function () end
@@ -217,6 +188,7 @@ local config = {
   -- 1. Enter
   -- 2. Old good simple <leader>d
   -- Tab is bad because it equals to <C-i>
+  -- This key used to toggle debug mode. Escape doesn't change mode!!
   debug_mode_key = "<leader>d",
 
   ---@type dm.MappingsGroup[]
