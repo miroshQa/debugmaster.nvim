@@ -83,13 +83,6 @@ local inspect_group = {
       waybardesc = "[R]epl"
     },
     {
-      key = "L",
-      action = function()
-      end,
-      desc = "Open dap logs (in case something went wrong with debugger)",
-      waybardesc = "[L]og"
-    },
-    {
       key = "u",
       action = function()
         local state = require("debugmaster.state")

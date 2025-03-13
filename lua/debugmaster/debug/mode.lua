@@ -63,11 +63,10 @@ function M.activate()
   cursorline_au_id = vim.api.nvim_create_autocmd("WinEnter", {
     callback = function(args)
       if vim.api.nvim_win_is_valid(last_entered_win) then
-        -- see :help vim.wo
-        vim.wo[last_entered_win].cursorline = false
+        vim.api.nvim_set_option_value("cursorline", false, { scope = "local", win = last_entered_win })
       end
       last_entered_win = vim.api.nvim_get_current_win()
-      vim.wo.cursorline = true
+      vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = last_entered_win })
     end
   })
 
@@ -77,9 +76,10 @@ function M.activate()
   --- So vim.b - is buffer scoped variables, vim.g - global variables
   --- vim.bo - is buffer scoped OPTIONS, vim.go - global options
   --- what the hell is vim.opt then?
+  --- Anyway.... Fuck this mess. nvim_set_option_value saves us
   last_entered_win = vim.api.nvim_get_current_win()
-  vim.wo.cursorline = true
-  vim.api.nvim_set_hl(0, "CursorLine", {bg = "#2c4e28"})
+  vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = last_entered_win })
+  vim.api.nvim_set_hl(0, "CursorLine", { bg = "#2c4e28" })
   vim.api.nvim_set_hl(0, "dCursor", { bg = "#2da84f" })
   vim.go.guicursor = "n-v-sm:block-dCursor,i-t-ci-ve-c:ver25,r-cr-o:hor20"
 end
@@ -101,7 +101,7 @@ function M.disable()
     end
   end
   vim.wo[0].cursorline = cursorline_orig
-  vim.api.nvim_set_hl(0, "CursorLine", {bg = cursorline_bg_orig})
+  vim.api.nvim_set_hl(0, "CursorLine", { bg = cursorline_bg_orig })
   vim.go.guicursor = guicursor_orig
   if cursorline_au_id then
     vim.api.nvim_del_autocmd(cursorline_au_id)
