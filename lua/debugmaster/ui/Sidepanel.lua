@@ -22,6 +22,8 @@ function M.new()
   self.components = {}
   ---@type debugmaster.ui.Sidepanel.IComponent
   self.active = nil
+  ---@type fun(buf: number)
+  self._on_set_active_callback = nil
 
   return self
 end
@@ -66,7 +68,6 @@ function Sidepanel:open(opts)
     cfg.split = direction
   end
 
-  vim.api.nvim_buf_set_keymap(self.active.buf, "n", "q", "<cmd>q<CR>", {})
   --  it saves us if we try open it in a float window
   local ok, res = pcall(vim.api.nvim_open_win, self.active.buf, enter, cfg)
   if not ok then
@@ -140,6 +141,10 @@ function Sidepanel:set_active(comp)
     vim.api.nvim_win_set_buf(self.win, comp.buf)
     self:_cook_winbar()
   end
+
+  if self._on_set_active_callback then
+    self._on_set_active_callback(self.active.buf)
+  end
 end
 
 -- if this comp already active and open then it close it
@@ -157,6 +162,11 @@ end
 ---@param comp debugmaster.ui.Sidepanel.IComponent
 function Sidepanel:add_component(comp)
   table.insert(self.components, comp)
+end
+
+---@param callback fun(buf: number)
+function Sidepanel:set_on_active_callback(callback)
+  self._on_set_active_callback = callback
 end
 
 return M

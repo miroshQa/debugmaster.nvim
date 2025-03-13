@@ -24,6 +24,16 @@ M.sidepanel:add_component(M.help)
 
 M.sidepanel:set_active(M.scopes)
 
+M.sidepanel:set_on_active_callback(function(buf)
+  vim.keymap.set("n", "q", "<cmd>q<CR>", { buffer = buf })
+  vim.keymap.set("n", "u", function() M.sidepanel:toggle() end, { buffer = buf })
+  vim.keymap.set("n", "U", function() M.sidepanel:toggle_layout() end, { buffer = buf })
+  vim.keymap.set("n", "H", function() M.sidepanel:toggle_active_with_open(M.help) end, { buffer = buf })
+  vim.keymap.set("n", "S", function() M.sidepanel:toggle_active_with_open(M.scopes) end, { buffer = buf })
+  vim.keymap.set("n", "R", function() M.sidepanel:toggle_active_with_open(M.repl) end, { buffer = buf })
+  vim.keymap.set("n", "P", function() M.sidepanel:toggle_active_with_open(M.terminal) end, { buffer = buf })
+end)
+
 dap.listeners.before.launch.dapui_config = function()
   M.sidepanel:open()
   if term_buf then

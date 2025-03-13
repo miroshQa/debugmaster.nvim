@@ -15,6 +15,8 @@ function M.new()
   vim.api.nvim_win_close(repl_win, true)
   self.name = "[R]epl"
   self.buf = repl_buf
+  -- https://github.com/mfussenegger/nvim-dap/issues/786
+  vim.keymap.set("i", "<C-w>", "<C-S-w>", {buffer = self.buf})
   return self
 end
 

@@ -22,36 +22,25 @@ local move_debugger_group = {
   -- We want to our DEBUG mode be "constant". So we can freely move and can't edit text
   mappings = {
     {
-      key = "i",
+      key = "K",
       action = function() require("dap").step_into() end,
       desc = "Step into",
     },
     {
-      key = "I",
-      action = function() require("dap").step_out() end,
-      desc = "Step out (quit frame)",
-    },
-    {
-      key = "o",
+      key = "L",
       action = function() require("dap").step_over() end,
       desc = "Step over (next line)",
     },
     {
-      key = "O",
-      action = function() require("dap").step_back() end,
-      desc = "Step back (prev line)",
+      key = "q",
+      action = function() require("dap").step_out() end,
+      desc = "Step out (quit frame)",
     },
     {
       key = "c",
       nowait = true,
       action = function() require("dap").continue() end,
       desc = "Continue or start debug session",
-    },
-    {
-      key = "C",
-      nowait = true,
-      action = function() require("dap").reverse_continue() end,
-      desc = "Reverse continue",
     },
     {
       key = "r",
@@ -117,7 +106,7 @@ local inspect_group = {
       desc = "Toggle float debugger interface mode",
     },
     {
-      key = "J",
+      key = "I",
       action = function()
         pcall(require('dap.ui.widgets').hover)
       end,
@@ -126,7 +115,6 @@ local inspect_group = {
     {
       key = ">",
       action = function()
-        print("rotate right")
         local state = require("debugmaster.state")
         state.sidepanel:rotate(1)
       end,
@@ -135,7 +123,6 @@ local inspect_group = {
     {
       key = "<",
       action = function()
-        print("Trying to rotate backward")
         local state = require("debugmaster.state")
         state.sidepanel:rotate(-1)
       end,

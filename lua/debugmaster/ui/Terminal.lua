@@ -1,3 +1,5 @@
+local debugmode = require("debugmaster.debug.mode")
+
 local M = {}
 
 ---@class debugmaster.ui.Terminal: debugmaster.ui.Sidepanel.IComponent
@@ -27,10 +29,21 @@ end
 function Terminal:attach_terminal(buf)
   self.buf = buf
 
+  vim.api.nvim_create_autocmd("ModeChanged", {
+    callback = function(args)
+      if args.buf == self.buf then
+      local modes = vim.split(args.match, ":")
+      local old, new = modes[1], modes[2]
+      if M.is_active() and new == "t" then
+        M.disable()
+      end
+      end
+    end
+  })
+
   vim.api.nvim_create_autocmd({"BufDelete", "BufUnload"}, {
     callback = function(args)
       if args.buf == self.buf then
-        vim.print(self)
         self.buf = self._dummy_buf
       end
     end

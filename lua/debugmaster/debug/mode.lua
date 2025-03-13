@@ -85,4 +85,20 @@ function M.is_active()
   return active
 end
 
+local new_modes_when_cancel = {
+  v = true,
+  V = true,
+  i = true,
+}
+
+vim.api.nvim_create_autocmd("ModeChanged", {
+  callback = function(args)
+    local modes = vim.split(args.match, ":")
+    local old, new = modes[1], modes[2]
+    if M.is_active() and new_modes_when_cancel[new] then
+      M.disable()
+    end
+  end
+})
+
 return M
