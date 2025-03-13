@@ -55,10 +55,10 @@ function M.activate()
     end
   end
 
-  vim.o.cursorline = true
-  vim.api.nvim_set_hl(0, "CursorLine", {bg = "#7c6f64"})
+  vim.go.cursorline = true
+  vim.api.nvim_set_hl(0, "CursorLine", {bg = "#2c4e28"})
   vim.api.nvim_set_hl(0, "dCursor", { bg = "#2da84f" })
-  vim.opt.guicursor = "n-v-sm:block-dCursor,i-t-ci-ve-c:ver25,r-cr-o:hor20"
+  vim.go.guicursor = "n-v-sm:block-dCursor,i-t-ci-ve-c:ver25,r-cr-o:hor20"
 end
 
 function M.disable()
@@ -74,9 +74,9 @@ function M.disable()
       })
     end
   end
-  vim.o.cursorline = cursorline_orig
+  vim.go.cursorline = cursorline_orig
   vim.api.nvim_set_hl(0, "CursorLine", {bg = cursorline_bg_orig})
-  vim.opt.guicursor = guicursor_orig
+  vim.go.guicursor = guicursor_orig
 end
 
 function M.toggle()

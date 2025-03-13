@@ -112,22 +112,6 @@ local inspect_group = {
       end,
       desc = "Inspect variable under cursor",
     },
-    {
-      key = ">",
-      action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:rotate(1)
-      end,
-      desc = "Rotate layout",
-    },
-    {
-      key = "<",
-      action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:rotate(-1)
-      end,
-      desc = "Rotate layout backward",
-    }
   }
 }
 
