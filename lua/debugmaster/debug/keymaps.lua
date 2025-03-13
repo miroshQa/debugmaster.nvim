@@ -157,7 +157,11 @@ local misc_group = {
     },
     {
       key = "Q",
-      action = function() require("dap").terminate() end,
+      action = function()
+        require("dap").terminate()
+        local state = require("debugmaster.state")
+        state.sidepanel:close()
+      end,
       desc = "Quit debug (terminate debug)"
     },
     {
