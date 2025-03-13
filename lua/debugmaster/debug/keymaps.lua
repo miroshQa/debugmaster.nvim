@@ -173,6 +173,10 @@ local nodesc_group = {
   mappings = {
     -- Debug mode is constant, we don't want to accidentally edit buffer
     {
+      key = "J",
+      action = function() end
+    },
+    {
       key = "p",
       action = function() end
     },

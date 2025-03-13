@@ -1,18 +1,17 @@
 local M = {}
 
-local guicursor_orig = vim.opt.guicursor._value
+local cursor_mode_off = "n-v-sm:block,i-t-ci-ve-c:ver25,r-cr-o:hor20"
+local cursor_mode_on = "n-v-sm:block-dCursor,i-t-ci-ve-c:ver25,r-cr-o:hor20"
 local cursorline_orig = vim.o.cursorline
 local cursorline_bg_orig = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID("CursorLine")), "bg")
 local cursorline_au_id = nil
 local last_entered_win = 0
-
-
 vim.api.nvim_set_hl(0, "dCursor", { bg = "#2da84f" })
-vim.go.guicursor = "n-v-sm:block-dCursor,i-t-ci-ve-c:ver25,r-cr-o:hor20"
+
 
 local function on_enable()
   vim.api.nvim_set_hl(0, "dCursor", { bg = "#2da84f" })
-  vim.go.guicursor = "n-v-sm:block-dCursor,i-t-ci-ve-c:ver25,r-cr-o:hor20"
+  vim.go.guicursor = cursor_mode_on
 
   last_entered_win = vim.api.nvim_get_current_win()
   vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = last_entered_win })
@@ -32,7 +31,7 @@ local function on_enable()
 end
 
 local function on_disable()
-  vim.go.guicursor = guicursor_orig
+  vim.go.guicursor = cursor_mode_off
   if cursorline_au_id then
     vim.api.nvim_del_autocmd(cursorline_au_id)
     vim.api.nvim_set_hl(0, "CursorLine", { bg = cursorline_bg_orig })

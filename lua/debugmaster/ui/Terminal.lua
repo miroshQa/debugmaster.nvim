@@ -29,7 +29,7 @@ end
 function Terminal:attach_terminal(buf)
   self.buf = buf
 
-  vim.keymap.set("t", "<Esc>", [[C-\><C-n>]], {buffer = self.buf})
+  vim.keymap.set("t", "<Esc>", "<C-\\><C-n>", {buffer = self.buf})
   vim.api.nvim_create_autocmd("ModeChanged", {
     callback = function(args)
       if args.buf == self.buf then
