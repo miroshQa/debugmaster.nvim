@@ -1,4 +1,4 @@
-local debugmode = require("debugmaster.debug.mode")
+local mode = require("debugmaster.debug.mode")
 
 local M = {}
 
@@ -29,13 +29,14 @@ end
 function Terminal:attach_terminal(buf)
   self.buf = buf
 
+  vim.keymap.set("t", "<Esc>", [[C-\><C-n>]], {buffer = self.buf})
   vim.api.nvim_create_autocmd("ModeChanged", {
     callback = function(args)
       if args.buf == self.buf then
       local modes = vim.split(args.match, ":")
       local old, new = modes[1], modes[2]
-      if M.is_active() and new == "t" then
-        M.disable()
+      if new == "t" and mode.is_active() then
+        mode.disable()
       end
       end
     end

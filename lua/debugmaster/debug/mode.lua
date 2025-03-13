@@ -1,3 +1,4 @@
+---@class debugmaster.debug.mode
 local M = {}
 
 
