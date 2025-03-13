@@ -14,7 +14,10 @@ local groups = require("debugmaster.debug.keymaps").groups
 ---@type table<string, dm.OrignalKeymap>
 local originals = {
 }
-local guicursor_original = nil
+local guicursor_orig = vim.opt.guicursor._value
+local cursorline_orig = vim.o.cursorline
+local cursorline_bg_orig = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID("CursorLine")), "bg")
+-- TODO: I guess CursorLineNr also would be cool
 
 local function save_original_settings()
   local all = vim.api.nvim_get_keymap("n")
@@ -37,7 +40,6 @@ local function save_original_settings()
       end
     end
   end
-  guicursor_original = vim.opt.guicursor._value
 end
 save_original_settings()
 
@@ -53,7 +55,8 @@ function M.activate()
     end
   end
 
-  guicursor_original = vim.opt.guicursor._value
+  vim.o.cursorline = true
+  vim.api.nvim_set_hl(0, "CursorLine", {bg = "#7c6f64"})
   vim.api.nvim_set_hl(0, "dCursor", { bg = "#2da84f" })
   vim.opt.guicursor = "n-v-sm:block-dCursor,i-t-ci-ve-c:ver25,r-cr-o:hor20"
 end
@@ -71,7 +74,9 @@ function M.disable()
       })
     end
   end
-  vim.opt.guicursor = guicursor_original
+  vim.o.cursorline = cursorline_orig
+  vim.api.nvim_set_hl(0, "CursorLine", {bg = cursorline_bg_orig})
+  vim.opt.guicursor = guicursor_orig
 end
 
 function M.toggle()
