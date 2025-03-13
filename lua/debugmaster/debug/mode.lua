@@ -1,3 +1,5 @@
+local config = require("debugmaster.config")
+
 ---@class debugmaster.debug.mode
 local M = {}
 
@@ -14,11 +16,11 @@ local groups = require("debugmaster.debug.keymaps").groups
 ---@type table<string, dm.OrignalKeymap>
 local originals = {
 }
-local guicursor_orig = vim.opt.guicursor._value
-local cursorline_orig = vim.o.cursorline
-local cursorline_bg_orig = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID("CursorLine")), "bg")
--- TODO: I guess CursorLineNr also would be cool
-local cursorline_au_id = nil
+
+---@alias debugmaster.debug.mode.callback fun(mode: debugmaster.debug.mode)
+
+---@type debugmaster.debug.mode.callback[]
+local callbacks = {}
 
 local function save_original_settings()
   local all = vim.api.nvim_get_keymap("n")
@@ -44,7 +46,6 @@ local function save_original_settings()
 end
 save_original_settings()
 
-local last_entered_win = 0
 function M.activate()
   if active then
     return
@@ -56,32 +57,7 @@ function M.activate()
       vim.keymap.set("n", mapping.key, action, { nowait = mapping.nowait })
     end
   end
-
-  -- we want to see cursor line only in the current split
-  -- TODO: Open PR in neovim repo. Because this basic feature should be in the core
-  -- Add new hl group CursorLineInactive
-  cursorline_au_id = vim.api.nvim_create_autocmd("WinEnter", {
-    callback = function(args)
-      if vim.api.nvim_win_is_valid(last_entered_win) then
-        vim.api.nvim_set_option_value("cursorline", false, { scope = "local", win = last_entered_win })
-      end
-      last_entered_win = vim.api.nvim_get_current_win()
-      vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = last_entered_win })
-    end
-  })
-
-  -- NOTES: Trying to undestand all those b, bo,g, go, opt, o, wo, ...
-  --- Basically we have two entities: variables, options
-  --- Options has "o" at the end.
-  --- So vim.b - is buffer scoped variables, vim.g - global variables
-  --- vim.bo - is buffer scoped OPTIONS, vim.go - global options
-  --- what the hell is vim.opt then?
-  --- Anyway.... Fuck this mess. nvim_set_option_value saves us
-  last_entered_win = vim.api.nvim_get_current_win()
-  vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = last_entered_win })
-  vim.api.nvim_set_hl(0, "CursorLine", { bg = "#2c4e28" })
-  vim.api.nvim_set_hl(0, "dCursor", { bg = "#2da84f" })
-  vim.go.guicursor = "n-v-sm:block-dCursor,i-t-ci-ve-c:ver25,r-cr-o:hor20"
+  M._notify_all()
 end
 
 function M.disable()
@@ -100,12 +76,18 @@ function M.disable()
       })
     end
   end
-  vim.wo[0].cursorline = cursorline_orig
-  vim.api.nvim_set_hl(0, "CursorLine", { bg = cursorline_bg_orig })
-  vim.go.guicursor = guicursor_orig
-  if cursorline_au_id then
-    vim.api.nvim_del_autocmd(cursorline_au_id)
+  M._notify_all()
+end
+
+function M._notify_all()
+  for _, listener in ipairs(callbacks) do
+    listener(M)
   end
+end
+
+---@param callback debugmaster.debug.mode.callback
+function M.add_callback_on_change(callback)
+  table.insert(callbacks, callback)
 end
 
 function M.toggle()

@@ -3,6 +3,7 @@ local M = {}
 local config = require("debugmaster.config")
 local mode = require("debugmaster.debug.mode")
 require("debugmaster.state")
+require("debugmaster.debug.cursor")
 
 vim.api.nvim_command 'autocmd FileType dap-float nnoremap <buffer><silent> q <cmd>close!<CR>'
 

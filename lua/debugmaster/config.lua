@@ -7,6 +7,7 @@ local config = {
   -- Tab is bad because it equals to <C-i>
   -- This key used to toggle debug mode. Escape doesn't change mode!!
   debug_mode_key = "<leader>d",
+  display_cursorline = true,
 }
 
 return config
