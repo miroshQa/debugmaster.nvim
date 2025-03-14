@@ -17,6 +17,7 @@ function M.new()
   self.buf = repl_buf
   -- https://github.com/mfussenegger/nvim-dap/issues/786
   vim.keymap.set("i", "<C-w>", "<C-S-w>", {buffer = self.buf})
+  vim.keymap.set("n", "<Tab>", "<CR>", {buffer = self.buf, remap = true})
   return self
 end
 

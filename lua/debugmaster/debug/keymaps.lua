@@ -165,7 +165,7 @@ local misc_group = {
       desc = "Quit debug (terminate debug)"
     },
     {
-      key = "M",
+      key = "df",
       action = function() require("dap").focus_frame() end,
       desc = "Focus current frame"
     },

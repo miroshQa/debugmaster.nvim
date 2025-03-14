@@ -13,6 +13,7 @@ function M.new()
   vim.api.nvim_win_close(scopes_win, true)
   self.buf = scopes_buf
   self.name = "[S]copes"
+  vim.keymap.set("n", "<Tab>", "<CR>", {buffer = self.buf, remap = true})
   return self
 end
 
