@@ -23,9 +23,8 @@ M.sidepanel:add_component(M.terminal)
 M.sidepanel:add_component(M.repl)
 M.sidepanel:add_component(M.help)
 
-M.sidepanel:set_active(M.scopes)
-
 M.sidepanel:set_on_active_callback(function(buf)
+  print("set keymaps for buf ", buf)
   vim.keymap.set("n", "q", "<cmd>q<CR>", { buffer = buf })
   vim.keymap.set("n", "u", function()
     M.sidepanel:toggle()
@@ -52,6 +51,8 @@ M.sidepanel:set_on_active_callback(function(buf)
     mode.activate()
   end, { buffer = buf })
 end)
+
+M.sidepanel:set_active(M.scopes)
 
 dap.listeners.before.launch.dapui_config = function()
   M.sidepanel:open()

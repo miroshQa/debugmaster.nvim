@@ -138,7 +138,7 @@ end
 function Sidepanel:set_active(comp)
   self.active = comp
   if self:is_open() then
-    vim.api.nvim_win_set_buf(self.win, comp.buf)
+    vim.api.nvim_win_set_buf(self.win, self.active.buf)
     self:_cook_winbar()
   end
 
