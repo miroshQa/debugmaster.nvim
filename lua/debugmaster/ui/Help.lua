@@ -1,12 +1,10 @@
 local utils = require("debugmaster.utils")
 
-local M = {}
-
 ---@class debugmaster.ui.Help: debugmaster.ui.Sidepanel.IComponent
 local Help = {}
 
 ---@param groups dm.MappingsGroup[]
-function M.new(groups)
+function Help.new(groups)
   ---@class debugmaster.ui.Help
   local self = setmetatable({}, { __index = Help })
   self.buf = vim.api.nvim_create_buf(false, true)
@@ -41,4 +39,4 @@ function M.new(groups)
   return self
 end
 
-return M
+return Help

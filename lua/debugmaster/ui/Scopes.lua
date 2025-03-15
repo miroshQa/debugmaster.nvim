@@ -1,11 +1,9 @@
-local M = {}
 local widgets = require('dap.ui.widgets')
-
 
 ---@class debugmaster.ui.Scopes: debugmaster.ui.Sidepanel.IComponent
 local Scopes = {}
 
-function M.new()
+function Scopes.new()
   ---@class debugmaster.ui.Scopes
   local self = setmetatable({}, {__index = Scopes})
   local scopes = widgets.sidebar(widgets.scopes)
@@ -17,4 +15,4 @@ function M.new()
   return self
 end
 
-return M
+return Scopes

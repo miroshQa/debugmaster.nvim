@@ -5,14 +5,12 @@ local utils = require("debugmaster.utils")
 ---@field buf number
 ---@field cb_on_buf_id_change fun() | nil Allows to notify sidepanel if buf changed
 
-local M = {}
-
 --- Debug adapter interface
 ---@class debugmaster.ui.Sidepanel
 local Sidepanel = {}
 
 
-function M.new()
+function Sidepanel.new()
   ---@class debugmaster.ui.Sidepanel
   local self = setmetatable({}, { __index = Sidepanel })
   self.win = -1 -- always need to check if valid to doing something
@@ -176,4 +174,4 @@ function Sidepanel:set_on_active_callback(callback)
   self._on_set_active_callback = callback
 end
 
-return M
+return Sidepanel
