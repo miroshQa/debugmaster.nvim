@@ -3,6 +3,7 @@ local utils = require("debugmaster.utils")
 ---@class debugmaster.ui.Sidepanel.IComponent
 ---@field name string
 ---@field buf number
+---@field cb_on_buf_id_change fun() | nil Allows to notify sidepanel if buf changed
 
 local M = {}
 
@@ -88,7 +89,14 @@ function Sidepanel:open(opts)
 end
 
 function Sidepanel:_cook_winbar()
-  local indent = "    "
+  -- TODO: redraw on resize
+  local win_width = vim.api.nvim_win_get_width(self.win)
+  local join_text_width = 0
+  for _, comp in ipairs(self.components) do
+    join_text_width = join_text_width + #comp.name
+  end
+  local max_indent = math.floor((win_width - join_text_width) / #self.components)
+  local indent = string.rep(" ", max_indent)
   local winbar = {}
   for _, comp in ipairs(self.components) do
     local text = comp.name
@@ -147,12 +155,11 @@ function Sidepanel:set_active(comp)
   end
 end
 
--- if this comp already active and open then it close it
+-- if this comp already active then it do nothing
 -- set comp as active and open panel if it is closed
 ---@param comp debugmaster.ui.Sidepanel.IComponent
-function Sidepanel:toggle_active_with_open(comp)
+function Sidepanel:set_active_with_open(comp)
   if self.active == comp and self:is_open() then
-    self:close()
     return
   end
   self:set_active(comp)

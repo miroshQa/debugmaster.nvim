@@ -7,7 +7,6 @@ local M = {}
 ---@field desc string?
 ---@field nowait boolean?
 ---@field group string?
----@field waybardesc string?
 
 ---@class dm.MappingsGroup
 ---@field name string? Group name. Not shown in HelpPopup if nil
@@ -59,28 +58,41 @@ local inspect_group = {
       key = "S",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:toggle_active_with_open(state.scopes)
+        state.sidepanel:set_active_with_open(state.scopes)
       end,
       desc = "Open scopes (global, local, etc variables)",
-      waybardesc = "[S]copes"
     },
     {
       key = "P",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:toggle_active_with_open(state.terminal)
+        state.sidepanel:set_active_with_open(state.terminal)
       end,
       desc = "Open program output (terminal)",
-      waybardesc = "[P]rogram"
     },
     {
       key = "R",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:toggle_active_with_open(state.repl)
+        state.sidepanel:set_active_with_open(state.repl)
       end,
       desc = "Open repl",
-      waybardesc = "[R]epl"
+    },
+    {
+      key = "T",
+      action = function()
+        local state = require("debugmaster.state")
+        state.sidepanel:set_active_with_open(state.threads)
+      end,
+      desc = "Open threads",
+    },
+    {
+      key = "B",
+      action = function()
+        local state = require("debugmaster.state")
+        state.sidepanel:set_active_with_open(state.breakpoints)
+      end,
+      desc = "Open breakpoints",
     },
     {
       key = "u",
@@ -150,10 +162,9 @@ local misc_group = {
       key = "H",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:toggle_active_with_open(state.help)
+        state.sidepanel:set_active_with_open(state.help)
       end,
       desc = "Open help",
-      waybardesc = "[H]elp"
     },
     {
       key = "Q",
@@ -192,14 +203,14 @@ local nodesc_group = {
       key = "D",
       action = function() end
     },
-    {
-      key = "x",
-      action = function() end
-    },
-    {
-      key = "X",
-      action = function() end
-    },
+    -- {
+    --   key = "x",
+    --   action = function() end
+    -- },
+    -- {
+    --   key = "X",
+    --   action = function() end
+    -- },
   }
 }
 
