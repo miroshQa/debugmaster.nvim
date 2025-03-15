@@ -20,11 +20,19 @@ end
 
 ---@param session dap.Session
 function Breakpoints:_update(session)
+  local lines = {}
   for buf, bpoints in pairs(require("dap.breakpoints").get()) do
+    local indent = "    "
+    local path = vim.api.nvim_buf_get_name(buf)
+    path = vim.fn.fnamemodify(path, ":.")
+    table.insert(lines, path)
     for _, point in ipairs(bpoints) do
-      vim.print(buf, point)
+      local linenr = point.line
+      local line = vim.trim(vim.api.nvim_buf_get_lines(buf, linenr - 1, linenr, false)[1])
+      table.insert(lines, string.format("%s %s %s", indent, linenr, line))
     end
   end
+  vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
 end
 
 return Breakpoints
