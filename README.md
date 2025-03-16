@@ -1,46 +1,65 @@
-# Neovim modal editor style focused dap interface
+# debugmaster.nvim 
 
-## Requireiments
-- Neovim version >= 0.10
+A Neovim plugin designed to supercharge your debugging workflow.
+It builds on the dap-view concept, reimagining how debugging interfaces should look and behave in a modal editor —plus introduces a dedicated DEBUG mode (like "insert" or "normal" mode, but built for debugging)
+
+
+## Requirements
+- Neovim >= 0.10
+- nvim-dap (required dependency)
+
+## Features
+- Dedicated debug mode
+- Anti GUI debugger interface with tight debug mode integration
 
 ## Quickstart
-Your setup with lazy.nvim plugin manager looks like that:
+Using lazy.nvim plugin manager:
+
 ```lua
 return {
   {
     "mfussenegger/nvim-dap",
     config = function()
       local dap = require("dap")
+      -- Configure your debug adapters here
+      -- https://github.com/mfussenegger/nvim-dap/blob/master/doc/dap.txt
     end,
   },
   {
-    "miroshQa/debugmaster.nvim/",
+    "miroshQa/debugmaster.nvim",
     config = function()
       local dm = require("debugmaster")
       vim.keymap.set("n", "<leader>d", dm.mode.toggle, { nowait = true })
-      -- you can remap default debug mode keymaps if you wish
+      
+      -- Example keymap modification:
       dm.keys.get("L").key = "o"
     end
   }
 }
 ```
 
-## Design philosophy
-### 1. Debug mode should be "transparent" and "constant":
-- Debug mode doesn't override any default normal mode motions
-so use can use your typical file navigation as usual  ( but there is always exceptions :) )
-- Debug mode override most of the edit normal mode motions (p, J, S, d, D, c, C)
+## Usage
+1. Configure your debug adapters using nvim-dap
+2. Press `<leader>d` to toggle debug mode
+3. Press `H` in debug mode to view available commands
+4. Toggle sidepanel with `u` (toggle float mode with `U`)
+5. Set / toggle breakpoints with `a` and start debugging with `c`
+6. Navigate through debug sessions using Debug mode keymaps (you can watch them in Help section (press `H`))
 
-### 2. Single pane philosophy:
-- UI provided by this plugin is always a single pane
+## Design Philosophy
+### 1. Transparent debugging workflow
+- Maintains standard normal-mode navigation
+- Only overrides edit-related keys (`p`, `J`, `S`, `d`, `D`, `c`, `C`)
 
+### 2. Not invasive interface
+- Single-panel interface that can operate in either:
+    1. Floating mode
+    2. Right-side split window mode
 
-## Future possible improvements
-- Action to expand all variables in the scope pane ()
-- Fix extra verbose output in scopes
-- Expandable search in scopes for a variable (dap core related)
-- WATCHES section
-- TESTS
+## Roadmap
+- [ ] Finish Threads and Breakpoints section (not usable right now)
+- [ ] Watch expressions section
+- [ ] Functional tests
 
-## Credits
-- for inspiration: https://github.com/igorlfs/nvim-dap-view 
+## Acknowledgements
+- Inspired by [nvim-dap-view](https://github.com/igorlfs/nvim-dap-view)  
