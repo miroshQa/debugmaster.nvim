@@ -1,10 +1,10 @@
 local dap = require("dap")
 
----@class debugmaster.ui.Breakpoints: debugmaster.ui.Sidepanel.IComponent
+---@class dm.ui.Breakpoints: dm.ui.Sidepanel.IComponent
 local Breakpoints = {}
 
 function Breakpoints.new()
-  ---@class debugmaster.ui.Breakpoints
+  ---@class dm.ui.Breakpoints
   local self = setmetatable({}, {__index = Breakpoints})
   self.name = "[B]points"
   self.buf = vim.api.nvim_create_buf(false, true)

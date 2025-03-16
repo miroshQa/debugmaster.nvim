@@ -1,16 +1,21 @@
 local M = {}
+local keymaps = require("debugmaster.debug.keymaps")
 
-local config = require("debugmaster.config")
-local mode = require("debugmaster.debug.mode")
-require("debugmaster.state")
-require("debugmaster.debug.cursor")
-require("dap")
+M.mode = {
+  toggle = function()
+    require("debugmaster.state")
+    require("debugmaster.debug.cursor")
+    require("dap")
+    require("debugmaster.debug.mode").toggle()
+  end
+}
+
+M.keys = {
+  remove = keymaps.remove,
+  remap = keymaps.remap,
+}
 
 vim.api.nvim_command 'autocmd FileType dap-float nnoremap <buffer><silent> q <cmd>close!<CR>'
-
-vim.keymap.set("n", config.debug_mode_key, function()
-  mode.toggle()
-end, {nowait = true})
 
 
 return M

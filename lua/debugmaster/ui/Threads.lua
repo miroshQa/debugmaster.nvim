@@ -1,10 +1,10 @@
 local dap = require("dap")
 
----@class debugmaster.ui.Threads: debugmaster.ui.Sidepanel.IComponent
+---@class dm.ui.Threads: dm.ui.Sidepanel.IComponent
 local Threads = {}
 
 function Threads.new()
-  ---@class debugmaster.ui.Threads
+  ---@class dm.ui.Threads
   local self = setmetatable({}, { __index = Threads })
   self.name = "[T]hreads"
   self.buf = vim.api.nvim_create_buf(false, true)

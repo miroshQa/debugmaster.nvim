@@ -1,11 +1,11 @@
 local utils = require("debugmaster.utils")
 
----@class debugmaster.ui.Help: debugmaster.ui.Sidepanel.IComponent
+---@class dm.ui.Help: dm.ui.Sidepanel.IComponent
 local Help = {}
 
 ---@param groups dm.MappingsGroup[]
 function Help.new(groups)
-  ---@class debugmaster.ui.Help
+  ---@class dm.ui.Help
   local self = setmetatable({}, { __index = Help })
   self.buf = vim.api.nvim_create_buf(false, true)
   self._hl_ns = vim.api.nvim_create_namespace("HelpPopupHighlightNamespace")

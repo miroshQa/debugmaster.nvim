@@ -1,25 +1,25 @@
 local utils = require("debugmaster.utils")
 
----@class debugmaster.ui.Sidepanel.IComponent
+---@class dm.ui.Sidepanel.IComponent
 ---@field name string
 ---@field buf number
 ---@field cb_on_buf_id_change fun() | nil Allows to notify sidepanel if buf changed
 
 --- Debug adapter interface
----@class debugmaster.ui.Sidepanel
+---@class dm.ui.Sidepanel
 local Sidepanel = {}
 
 
 function Sidepanel.new()
-  ---@class debugmaster.ui.Sidepanel
+  ---@class dm.ui.Sidepanel
   local self = setmetatable({}, { __index = Sidepanel })
   self.win = -1 -- always need to check if valid to doing something
   self.direction = "right"
   self.float = false
 
-  ---@type debugmaster.ui.Sidepanel.IComponent[]
+  ---@type dm.ui.Sidepanel.IComponent[]
   self.components = {}
-  ---@type debugmaster.ui.Sidepanel.IComponent
+  ---@type dm.ui.Sidepanel.IComponent
   self.active = nil
   ---@type fun(buf: number)
   self._on_set_active_callback = nil
@@ -39,11 +39,11 @@ function Sidepanel:toggle()
   end
 end
 
----@class debugmaster.ui.Sidepanel.OpenOptions
+---@class dm.ui.Sidepanel.OpenOptions
 ---@field direction "left" | "right" | "above" | "below" | nil Opens in previous state if nil (right when open first time)
 ---@field float boolean? If float specified then it creates float window and ignore direction
 
----@param opts debugmaster.ui.Sidepanel.OpenOptions?
+---@param opts dm.ui.Sidepanel.OpenOptions?
 function Sidepanel:open(opts)
   if self:is_open() then
     return
@@ -140,7 +140,7 @@ function Sidepanel:toggle_layout()
   self:open({ float = not self.float })
 end
 
----@param comp debugmaster.ui.Sidepanel.IComponent
+---@param comp dm.ui.Sidepanel.IComponent
 function Sidepanel:set_active(comp)
   self.active = comp
   if self:is_open() then
@@ -155,7 +155,7 @@ end
 
 -- if this comp already active then it do nothing
 -- set comp as active and open panel if it is closed
----@param comp debugmaster.ui.Sidepanel.IComponent
+---@param comp dm.ui.Sidepanel.IComponent
 function Sidepanel:set_active_with_open(comp)
   if self.active == comp and self:is_open() then
     return
@@ -164,7 +164,7 @@ function Sidepanel:set_active_with_open(comp)
   self:open()
 end
 
----@param comp debugmaster.ui.Sidepanel.IComponent
+---@param comp dm.ui.Sidepanel.IComponent
 function Sidepanel:add_component(comp)
   table.insert(self.components, comp)
 end

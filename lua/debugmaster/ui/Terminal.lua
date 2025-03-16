@@ -1,9 +1,10 @@
 local mode = require("debugmaster.debug.mode")
 
----@class debugmaster.ui.Terminal: debugmaster.ui.Sidepanel.IComponent
+---@class dm.ui.Terminal: dm.ui.Sidepanel.IComponent
 local Terminal = {}
 
-function Terminal.new() ---@class debugmaster.ui.Terminal
+function Terminal.new()
+  ---@class dm.ui.Terminal
   local self = setmetatable({}, { __index = Terminal })
   self.name = "[P]rogram"
 

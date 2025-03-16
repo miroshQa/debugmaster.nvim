@@ -41,7 +41,7 @@ local function on_disable()
   end
 end
 
----@param mode debugmaster.debug.mode
+---@param mode dm.debug.mode
 local function callback_on_change(mode)
   if mode.is_active() then
     on_enable()

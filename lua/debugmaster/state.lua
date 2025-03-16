@@ -2,7 +2,7 @@ local dap = require("dap")
 local groups = require("debugmaster.debug.keymaps").groups
 local mode = require("debugmaster.debug.mode")
 
----@class debugmaster.State
+---@class dm.State
 local M = {}
 
 local term_buf = nil

@@ -1,6 +1,6 @@
 local config = require("debugmaster.config")
 
----@class debugmaster.debug.mode
+---@class dm.debug.mode
 local M = {}
 
 
@@ -17,9 +17,9 @@ local groups = require("debugmaster.debug.keymaps").groups
 local originals = {
 }
 
----@alias debugmaster.debug.mode.callback fun(mode: debugmaster.debug.mode)
+---@alias dm.debug.mode.callback fun(mode: dm.debug.mode)
 
----@type debugmaster.debug.mode.callback[]
+---@type dm.debug.mode.callback[]
 local callbacks = {}
 
 local function save_original_settings()
@@ -85,7 +85,7 @@ function M._notify_all()
   end
 end
 
----@param callback debugmaster.debug.mode.callback
+---@param callback dm.debug.mode.callback
 function M.add_callback_on_change(callback)
   table.insert(callbacks, callback)
 end

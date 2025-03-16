@@ -1,11 +1,11 @@
 local utils = require("debugmaster.utils")
 local repl = require 'dap.repl'
 
----@class debugmaster.ui.Repl: debugmaster.ui.Sidepanel.IComponent
+---@class dm.ui.Repl: dm.ui.Sidepanel.IComponent
 local Repl = {}
 
 function Repl.new()
-  ---@class debugmaster.ui.Repl
+  ---@class dm.ui.Repl
   local self = setmetatable({}, {__index = Repl})
 
   local repl_buf, repl_win = repl.open()
