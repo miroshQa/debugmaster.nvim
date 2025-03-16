@@ -4,7 +4,7 @@
 - Neovim version >= 0.10
 
 ## Quickstart
-
+Your setup with lazy.nvim plugin manager looks like that:
 ```lua
 return {
   {
@@ -14,10 +14,12 @@ return {
   end,
 },
 {
-  dir = "miroshQa/debugmaster.nvim/",
+  "miroshQa/debugmaster.nvim/",
   config = function()
     local dm = require("debugmaster")
     vim.keymap.set("n", "<leader>d", dm.mode.toggle, {nowait = true})
+    -- you can remap default debug mode keymaps if you wish
+    dm.keys.get("L").key = "o"
   end
 }
 }

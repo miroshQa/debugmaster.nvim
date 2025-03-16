@@ -223,27 +223,18 @@ M.groups = {
   nodesc_group,
 }
 
-function M.remap(key, new_key)
+---Give the reference to the key entry so you can remap it to something else
+---Throws an error if the key doesn't exist
+---@return dm.KeySpec
+function M.get(key)
   for _, group in ipairs(M.groups) do
     for _, mapping in ipairs(group.mappings) do
       if mapping.key == key then
-        mapping.key = new_key
-        break
-      end
-    end
-  end
-end
-
----@return dm.KeySpec?
-function M.remove(key)
-  for _, group in ipairs(M.groups) do
-    for i, mapping in ipairs(group.mappings) do
-      if mapping.key == key then
-        group.mappings[i] = nil
         return mapping
       end
     end
   end
+  error("Key doesn't exist")
 end
 
 return M
