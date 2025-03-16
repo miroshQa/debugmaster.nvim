@@ -8,22 +8,21 @@ Your setup with lazy.nvim plugin manager looks like that:
 ```lua
 return {
   {
-  "mfussenegger/nvim-dap",
-  config = function()
-    local dap = require("dap")
-  end,
-},
-{
-  "miroshQa/debugmaster.nvim/",
-  config = function()
-    local dm = require("debugmaster")
-    vim.keymap.set("n", "<leader>d", dm.mode.toggle, {nowait = true})
-    -- you can remap default debug mode keymaps if you wish
-    dm.keys.get("L").key = "o"
-  end
+    "mfussenegger/nvim-dap",
+    config = function()
+      local dap = require("dap")
+    end,
+  },
+  {
+    "miroshQa/debugmaster.nvim/",
+    config = function()
+      local dm = require("debugmaster")
+      vim.keymap.set("n", "<leader>d", dm.mode.toggle, { nowait = true })
+      -- you can remap default debug mode keymaps if you wish
+      dm.keys.get("L").key = "o"
+    end
+  }
 }
-}
-
 ```
 
 ## Design philosophy

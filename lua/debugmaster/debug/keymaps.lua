@@ -149,7 +149,7 @@ local breakpoings_group = {
       key = "]b",
       action = function() require("debugmaster.utils").gotoBreakpoint("next") end,
       desc = "Go to next breakpoint"
-    }
+    },
   },
 }
 
@@ -180,6 +180,16 @@ local misc_group = {
       action = function() require("dap").focus_frame() end,
       desc = "Focus current frame"
     },
+    {
+      key = "[f",
+      action = function() require("dap").down() end,
+      desc = "Go to previous frame"
+    },
+    {
+      key = "]f",
+      action = function() require("dap").up() end,
+      desc = "Go to next frame"
+    }
   }
 }
 
@@ -193,10 +203,6 @@ local nodesc_group = {
     },
     {
       key = "p",
-      action = function() end
-    },
-    {
-      key = "d",
       action = function() end
     },
     {
