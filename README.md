@@ -3,6 +3,9 @@
 A Neovim plugin designed to supercharge your debugging workflow.
 It builds on the dap-view concept, reimagining how debugging interfaces should look and behave in a modal editor —plus introduces a dedicated DEBUG mode (like "insert" or "normal" mode, but built for debugging)
 
+![split](https://github.com/user-attachments/assets/96d1f463-d4f8-42ed-809f-bab22d323a66)
+
+![float](https://github.com/user-attachments/assets/b5876f8b-b3d9-4e87-a6bb-48261a3da33b)
 
 ## Requirements
 - Neovim >= 0.10
