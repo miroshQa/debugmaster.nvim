@@ -1,6 +1,5 @@
 local dap = require("dap")
 local groups = require("debugmaster.debug.keymaps").groups
-local mode = require("debugmaster.debug.mode")
 
 ---@class dm.State
 local M = {}
@@ -26,10 +25,6 @@ M.sidepanel:add_component(M.repl)
 M.sidepanel:add_component(M.threads)
 M.sidepanel:add_component(M.breakpoints)
 M.sidepanel:add_component(M.help)
-
-M.sidepanel:set_on_active_callback(function(buf)
-  vim.keymap.set("n", "q", "<cmd>q<CR>", { buffer = buf })
-end)
 
 M.sidepanel:set_active(M.scopes)
 

@@ -110,11 +110,13 @@ local new_modes_when_cancel = {
 
 vim.api.nvim_create_autocmd("ModeChanged", {
   callback = function(args)
-    local ui = require("debugmaster.state").sidepanel
     local modes = vim.split(args.match, ":")
     local old, new = modes[1], modes[2]
-    if M.is_active() and not ui:is_focused() and new_modes_when_cancel[new] then
-      M.disable()
+    if M.is_active() and new_modes_when_cancel[new] then
+      local ui = require("debugmaster.state").sidepanel
+      if ui:is_focused() then
+        M.disable()
+      end
     end
   end
 })
