@@ -35,7 +35,7 @@ return {
       vim.keymap.set("n", "<leader>d", dm.mode.toggle, { nowait = true })
       
       -- Example keymap modification:
-      dm.keys.get("L").key = "o"
+      dm.keys.get("q").key = "O"
     end
   }
 }
@@ -45,9 +45,10 @@ return {
 1. Configure your debug adapters using nvim-dap
 2. Press `<leader>d` to toggle debug mode
 3. Press `H` in debug mode to view available commands
-4. Toggle sidepanel with `u` (toggle float mode with `U`)
-5. Set / toggle breakpoints with `a` and start debugging with `c`
-6. Navigate through debug sessions using Debug mode keymaps (you can watch them in Help section (press `H`))
+4. Toggle sidepanel with `u` 
+5. Toggle float mode with `U` if the side panel has too little space to display content.
+6. Set / toggle breakpoints with `a` and start debugging with `c`
+7. Navigate through debug sessions using Debug mode keymaps (you can watch them in Help section (press `H`))
 
 ## Design Philosophy
 ### 1. Transparent debugging workflow
@@ -60,9 +61,15 @@ return {
     2. Right-side split window mode
 
 ## Roadmap
-- [ ] Finish Threads and Breakpoints section (not usable right now)
+- [ ] Finish Threads and Breakpoints section (not usable right now, you can only view)
+(You are encoraged to use your fuzzy finder for this `FzfLua dap_breakpoints` etc)
 - [ ] Watch expressions section
 - [ ] Functional tests
+
+## Recipes
+1. An example of how to display DEBUG mode in your status line can be found here:
+https://github.com/miroshQa/dotfiles/blob/main/nvim/lua/plugins/lualine.lua
+
 
 ## Acknowledgements
 - Inspired by [nvim-dap-view](https://github.com/igorlfs/nvim-dap-view)  

@@ -14,9 +14,11 @@ function Terminal.new()
     "Debug adapter didn't provide terminal",
     "Eiter you attached to the process",
     "Either you need to tweak your adapter configugration options",
-    "Consult with your debug adapter documentation",
-    "Check nvim dap issues about your debug adapter",
-    "https://github.com/mfussenegger/nvim-dap/wiki/Debug-Adapter-installation"
+    "And probably, the program output is being redirected to the REPL right now.",
+    "- Consult with your debug adapter documentation",
+    "https://github.com/mfussenegger/nvim-dap/wiki/Debug-Adapter-installation",
+    'Usually required option is `console = "integratedTerminal"`',
+    "- Check nvim dap issues about your debug adapter",
   }
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
   vim.api.nvim_set_option_value("modifiable", false, { buf = self.buf })
