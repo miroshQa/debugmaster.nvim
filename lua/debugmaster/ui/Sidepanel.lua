@@ -30,6 +30,10 @@ function Sidepanel:is_open()
   return vim.api.nvim_win_is_valid(self.win)
 end
 
+function Sidepanel:is_focused()
+  return vim.api.nvim_get_current_win() == self.win
+end
+
 function Sidepanel:toggle()
   if not self:is_open() then
     self:open()

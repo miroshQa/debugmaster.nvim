@@ -209,14 +209,6 @@ local nodesc_group = {
       key = "D",
       action = function() end
     },
-    -- {
-    --   key = "x",
-    --   action = function() end
-    -- },
-    -- {
-    --   key = "X",
-    --   action = function() end
-    -- },
   }
 }
 

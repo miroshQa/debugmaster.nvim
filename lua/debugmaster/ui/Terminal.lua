@@ -29,17 +29,6 @@ function Terminal:attach_terminal(buf)
   self.buf = buf
 
   vim.keymap.set("t", "<Esc>", "<C-\\><C-n>", {buffer = self.buf})
-  vim.api.nvim_create_autocmd("ModeChanged", {
-    callback = function(args)
-      if args.buf == self.buf then
-      local modes = vim.split(args.match, ":")
-      local old, new = modes[1], modes[2]
-      if new == "t" and mode.is_active() then
-        mode.disable()
-      end
-      end
-    end
-  })
 
   vim.api.nvim_create_autocmd({"BufDelete", "BufUnload"}, {
     callback = function(args)
