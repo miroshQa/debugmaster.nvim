@@ -21,7 +21,7 @@ local move_debugger_group = {
   -- We want to our DEBUG mode be "constant". So we can freely move and can't edit text
   mappings = {
     {
-      key = "K",
+      key = "I",
       action = function() require("dap").step_into() end,
       desc = "Step into",
     },
@@ -31,9 +31,9 @@ local move_debugger_group = {
       desc = "Step over (next line)",
     },
     {
-      key = "q",
+      key = "O",
       action = function() require("dap").step_out() end,
-      desc = "Step out (quit frame)",
+      desc = "Step out",
     },
     {
       key = "c",
@@ -111,7 +111,7 @@ local inspect_group = {
       desc = "Toggle float debugger interface mode",
     },
     {
-      key = "I",
+      key = "di",
       action = function()
         pcall(require('dap.ui.widgets').hover)
       end,
