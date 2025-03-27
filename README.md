@@ -66,6 +66,9 @@ return {
 - [ ] Watch expressions section
 - [ ] Functional tests
 
+## Known issues
+- If you don't have a prior keymap on "K" then it is unable to override it in DEBUG mode for some reason.
+
 ## Recipes
 1. An example of how to display DEBUG mode in your status line can be found here:
 https://github.com/miroshQa/dotfiles/blob/main/nvim/lua/plugins/lualine.lua
