@@ -189,6 +189,22 @@ local misc_group = {
       key = "]f",
       action = function() require("dap").up() end,
       desc = "Go to next frame"
+    },
+    {
+      key = "}",
+      action = function()
+        local state = require("debugmaster.state")
+        state.sidepanel:rotate(1)
+      end,
+      desc = "Rotate sidenapel clockwise",
+    },
+    {
+      key = "{",
+      action = function()
+        local state = require("debugmaster.state")
+        state.sidepanel:rotate(-1)
+      end,
+      desc = "Rotate sidenapel anticlockwise",
     }
   }
 }

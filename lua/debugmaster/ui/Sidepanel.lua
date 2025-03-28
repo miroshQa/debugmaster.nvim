@@ -119,9 +119,10 @@ end
 ---rotate sidebar clockwise
 ---@param step number
 function Sidepanel:rotate(step)
-  if not vim.api.nvim_win_is_valid(self.win) then
+  if not vim.api.nvim_win_is_valid(self.win) or self.float then
     return
   end
+  local was_focused = self:is_focused()
   local cur_direction = self.direction
   self:close()
   local directions = { "below", "left", "above", "right" }
@@ -132,6 +133,9 @@ function Sidepanel:rotate(step)
       local next = directions[index + 1]
       self:open({ direction = next })
     end
+  end
+  if was_focused then
+    vim.api.nvim_set_current_win(self.win)
   end
 end
 
