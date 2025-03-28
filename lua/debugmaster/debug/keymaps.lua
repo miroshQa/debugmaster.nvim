@@ -100,7 +100,7 @@ local inspect_group = {
         local state = require("debugmaster.state")
         state.sidepanel:toggle()
       end,
-      desc = "Toggle debugger interface",
+      desc = "Toggle ui",
     },
     {
       key = "U",
@@ -108,7 +108,7 @@ local inspect_group = {
         local state = require("debugmaster.state")
         state.sidepanel:toggle_layout()
       end,
-      desc = "Toggle float debugger interface mode",
+      desc = "Toggle ui float mode",
     },
     {
       key = "di",
@@ -126,12 +126,12 @@ local breakpoings_group = {
   hlgroup = "Boolean",
   mappings = {
     {
-      key = "a", -- we want to avoid breaking motions, need to follow this principe and further
+      key = "t",
       action = function() require("dap").toggle_breakpoint() end,
       desc = "Toggle breakpoint",
     },
     {
-      key = "A",
+      key = "db",
       action = function()
         local condition = vim.fn.input({ prompt = "Enter breakpoing condition: " })
         if condition ~= "" then
