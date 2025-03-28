@@ -35,7 +35,7 @@ return {
       vim.keymap.set("n", "<leader>d", dm.mode.toggle, { nowait = true })
       
       -- Example keymap modification:
-      dm.keys.get("L").key = "o"
+      dm.keys.get("q").key = "O"
     end
   }
 }

@@ -31,9 +31,9 @@ local move_debugger_group = {
       desc = "Step over (next line)",
     },
     {
-      key = "O",
+      key = "q",
       action = function() require("dap").step_out() end,
-      desc = "Step out",
+      desc = "Step out (quit current stack frame)",
     },
     {
       key = "c",
