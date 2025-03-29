@@ -1,38 +1,74 @@
 local dap = require("dap")
+local breakpoints = require("dap.breakpoints")
+local Tree = require("debugmaster.ui.Tree")
+
+---@class dm.BreakpointNode: dm.NodeTrait
+local BreakpointNode = {}
+
+---@param bpoints {buf: number, bpoints: any}?
+function BreakpointNode.new(bpoints, bpoint)
+  ---@class dm.BreakpointNode
+  local self = setmetatable({}, { __index = BreakpointNode })
+  self.id = "first"
+  self.bpoints = bpoints
+  self.bpoint = bpoint
+  if bpoints or bpoint then
+    self.id = bpoints and ("buf" .. bpoints.buf) or ("bp" .. bpoint.line)
+  end
+  return self
+end
+
+function BreakpointNode:get_children_iter()
+  if not self.bpoint and not self.bpoints then
+    return coroutine.wrap(function()
+      for buf, bpoints in pairs(breakpoints.get()) do
+        coroutine.yield(BreakpointNode.new({ buf = buf, bpoints = bpoints }))
+      end
+    end)
+  elseif self.bpoints then
+    return vim.iter(self.bpoints.bpoints):map(function(b)
+      b.buf = self.bpoints.buf
+      return BreakpointNode.new(nil, b)
+    end)
+  end
+  return function() end
+end
+
+function BreakpointNode:get_repr()
+  if not self.bpoints and not self.bpoint then
+    return { { text = "Breakpoints", hl = "Exception" } }
+  elseif self.bpoints then
+    local path = vim.api.nvim_buf_get_name(self.bpoints.buf)
+    path = vim.fn.fnamemodify(path, ":.")
+    return { { text = path, hl = "Statement" } }
+  else
+    local indent = "    "
+    local linenr = self.bpoint.line
+    local line = vim.trim(vim.api.nvim_buf_get_lines(self.bpoint.buf, linenr - 1, linenr, false)[1])
+    local text = string.format("%s %s %s", indent, linenr, line)
+    return { { text = text } }
+  end
+end
+
+function BreakpointNode:is_expanded()
+  return true
+end
 
 ---@class dm.ui.Breakpoints: dm.ui.Sidepanel.IComponent
 local Breakpoints = {}
 
 function Breakpoints.new()
   ---@class dm.ui.Breakpoints
-  local self = setmetatable({}, {__index = Breakpoints})
+  local self = setmetatable({}, { __index = Breakpoints })
   self.name = "[B]points"
-  self.buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, {"Some breakponts here"})
-
+  self._tree = Tree.new_with_buf(BreakpointNode.new())
+  self.buf = self._tree.buf
 
   dap.listeners.after.setBreakpoints["debugmaster"] = function(session)
-    self:_update(session)
+    self._tree:render()
   end
 
   return self
-end
-
----@param session dap.Session
-function Breakpoints:_update(session)
-  local lines = {}
-  for buf, bpoints in pairs(require("dap.breakpoints").get()) do
-    local indent = "    "
-    local path = vim.api.nvim_buf_get_name(buf)
-    path = vim.fn.fnamemodify(path, ":.")
-    table.insert(lines, path)
-    for _, point in ipairs(bpoints) do
-      local linenr = point.line
-      local line = vim.trim(vim.api.nvim_buf_get_lines(buf, linenr - 1, linenr, false)[1])
-      table.insert(lines, string.format("%s %s %s", indent, linenr, line))
-    end
-  end
-  vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
 end
 
 return Breakpoints

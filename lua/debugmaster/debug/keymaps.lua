@@ -133,6 +133,13 @@ local breakpoings_group = {
     {
       key = "db",
       action = function()
+        require("dap").clear_breakpoints()
+      end,
+      desc = "Remove all breakpoints",
+    },
+    {
+      key = "dc",
+      action = function()
         local condition = vim.fn.input({ prompt = "Enter breakpoing condition: " })
         if condition ~= "" then
           require("dap").toggle_breakpoint(condition)
