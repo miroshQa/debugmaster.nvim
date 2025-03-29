@@ -36,17 +36,20 @@ end
 
 function BreakpointNode:get_repr()
   if not self.bpoints and not self.bpoint then
-    return { { text = "Breakpoints", hl = "Exception" } }
+    local help = {
+      { { "x - remove breakpoint", "Comment"} }
+    }
+    return { { "Breakpoints", "Exception" } }, help
   elseif self.bpoints then
     local path = vim.api.nvim_buf_get_name(self.bpoints.buf)
     path = vim.fn.fnamemodify(path, ":.")
-    return { { text = path, hl = "Statement" } }
+    return { { path, "Statement" } }
   else
     local indent = "    "
     local linenr = self.bpoint.line
     local line = vim.trim(vim.api.nvim_buf_get_lines(self.bpoint.buf, linenr - 1, linenr, false)[1])
     local text = string.format("%s %s %s", indent, linenr, line)
-    return { { text = text } }
+    return { { text } }
   end
 end
 

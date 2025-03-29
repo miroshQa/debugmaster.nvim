@@ -34,7 +34,7 @@ end
 function ThreadsNode:get_repr(depth)
   local session = assert(require("dap").session())
   if not self.thread and not self.frame then
-    return { { text = "Debug Threads", hl = "Title" } }
+    return { { "Debug Threads", "Title" } }
   elseif self.thread then
     local icon = " "
     local hl = "DapThread"
@@ -43,7 +43,7 @@ function ThreadsNode:get_repr(depth)
       hl = "DapStoppedThread"
     end
     return {
-      { text = "  " .. self.thread.name .. icon, hl = hl }
+      { "  " .. self.thread.name .. icon, hl }
     }
   elseif self.frame then
     local icon = " "
@@ -53,7 +53,7 @@ function ThreadsNode:get_repr(depth)
       hl = "DapCurrentFrame"
     end
     return {
-      { text = "    " .. self.frame.name .. icon, hl = hl }
+      { "    " .. self.frame.name .. icon, hl }
     }
   end
 end
