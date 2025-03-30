@@ -61,13 +61,7 @@ return {
     2. Right-side split window mode
 
 ## Roadmap
-- [ ] Finish Threads and Breakpoints section (not usable right now, you can only view)
-(You are encoraged to use your fuzzy finder for this `FzfLua dap_breakpoints` etc)
-- [ ] Watch expressions section
 - [ ] Functional tests
-
-## Known issues
-- If you don't have a prior keymap on "K" then it is unable to override it in DEBUG mode for some reason.
 
 ## Recipes
 1. An example of how to display DEBUG mode in your status line can be found here:
