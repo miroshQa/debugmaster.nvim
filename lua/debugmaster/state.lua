@@ -16,13 +16,11 @@ M.terminal = require("debugmaster.ui.Terminal").new()
 M.repl = require("debugmaster.ui.Repl").new()
 M.scopes = require("debugmaster.ui.Scopes").new()
 M.help = require("debugmaster.ui.Help").new(groups)
-M.threads = require("debugmaster.ui.Threads").new()
 M.breakpoints = require("debugmaster.ui.Breakpoints").new()
 
 M.sidepanel:add_component(M.scopes)
 M.sidepanel:add_component(M.terminal)
 M.sidepanel:add_component(M.repl)
-M.sidepanel:add_component(M.threads)
 M.sidepanel:add_component(M.breakpoints)
 M.sidepanel:add_component(M.help)
 

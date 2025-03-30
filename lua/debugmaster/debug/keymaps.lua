@@ -50,10 +50,26 @@ local move_debugger_group = {
 }
 
 ---@type dm.MappingsGroup
-local inspect_group = {
-  name = "INSPECT DEBUG STATE",
+local ui_group = {
+  name = "DEBUG UI INTERACTION",
   hlgroup = "STRING",
   mappings = {
+    {
+      key = "u",
+      action = function()
+        local state = require("debugmaster.state")
+        state.sidepanel:toggle()
+      end,
+      desc = "Toggle ui",
+    },
+    {
+      key = "U",
+      action = function()
+        local state = require("debugmaster.state")
+        state.sidepanel:toggle_layout()
+      end,
+      desc = "Toggle ui float mode",
+    },
     {
       key = "S",
       action = function()
@@ -79,14 +95,6 @@ local inspect_group = {
       desc = "Open repl",
     },
     {
-      key = "T",
-      action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.threads)
-      end,
-      desc = "Open threads",
-    },
-    {
       key = "B",
       action = function()
         local state = require("debugmaster.state")
@@ -95,20 +103,44 @@ local inspect_group = {
       desc = "Open breakpoints",
     },
     {
-      key = "u",
+      key = "H",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:toggle()
+        state.sidepanel:set_active_with_open(state.help)
       end,
-      desc = "Toggle ui",
+      desc = "Open help",
     },
     {
-      key = "U",
+      key = "}",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:toggle_layout()
+        state.sidepanel:rotate(1)
       end,
-      desc = "Toggle ui float mode",
+      desc = "Rotate sidenapel clockwise",
+    },
+    {
+      key = "{",
+      action = function()
+        local state = require("debugmaster.state")
+        state.sidepanel:rotate(-1)
+      end,
+      desc = "Rotate sidenapel anticlockwise",
+    },
+    {
+      key = "df",
+      action = function()
+        local widgets = require("dap.ui.widgets")
+        widgets.cursor_float(widgets.frames)
+      end,
+      desc = "frames float"
+    },
+    {
+      key = "dt",
+      action = function()
+        local widgets = require("dap.ui.widgets")
+        widgets.cursor_float(widgets.threads)
+      end,
+      desc = "threads float"
     },
     {
       key = "di",
@@ -117,6 +149,7 @@ local inspect_group = {
       end,
       desc = "Inspect variable under cursor",
     },
+
   }
 }
 
@@ -166,14 +199,6 @@ local misc_group = {
   hlgroup = "TYPE",
   mappings = {
     {
-      key = "H",
-      action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.help)
-      end,
-      desc = "Open help",
-    },
-    {
       key = "Q",
       action = function()
         require("dap").terminate()
@@ -183,7 +208,7 @@ local misc_group = {
       desc = "Quit debug (terminate debug)"
     },
     {
-      key = "df",
+      key = "dF",
       action = function() require("dap").focus_frame() end,
       desc = "Focus current frame"
     },
@@ -197,22 +222,7 @@ local misc_group = {
       action = function() require("dap").up() end,
       desc = "Go to next frame"
     },
-    {
-      key = "}",
-      action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:rotate(1)
-      end,
-      desc = "Rotate sidenapel clockwise",
-    },
-    {
-      key = "{",
-      action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:rotate(-1)
-      end,
-      desc = "Rotate sidenapel anticlockwise",
-    }
+
   }
 }
 
@@ -239,7 +249,7 @@ local nodesc_group = {
 M.groups = {
   move_debugger_group,
   breakpoings_group,
-  inspect_group,
+  ui_group,
   misc_group,
   nodesc_group,
 }
