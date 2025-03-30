@@ -23,9 +23,9 @@ function ThreadsNode:get_children_iter()
   local session = assert(require("dap").session())
   -- rust enums kind off
   if not self.thread and not self.frame then
-    return vim.iter(session.threads):map(function(t) return ThreadsNode.new(t, nil) end)
+    return vim.iter(session.threads or {}):map(function(t) return ThreadsNode.new(t, nil) end)
   elseif self.thread then
-    return vim.iter(self.thread.frames):map(function(f) return ThreadsNode.new(nil, f) end)
+    return vim.iter(self.thread.frames or {}):map(function(f) return ThreadsNode.new(nil, f) end)
   elseif self.frame then
     return function() end
   end
@@ -39,12 +39,11 @@ function ThreadsNode:get_repr(depth)
     local icon = " "
     local hl = "DapThread"
     if self.thread.stopped then
-      icon = "⏸ "
+      icon = " ⏸ "
       hl = "DapStoppedThread"
     end
-    return {
-      { "  " .. self.thread.name .. icon, hl }
-    }
+    local text = string.format("  %s (tid: %s) %s", self.thread.name, self.thread.id, icon)
+    return { { text, hl } }
   elseif self.frame then
     local icon = " "
     local hl = "DapFrame"
@@ -79,13 +78,15 @@ function Threads.new()
 
   vim.api.nvim_buf_set_keymap(self.buf, "n", "<CR>", "", {
     callback = function()
+      local session = require("dap").session()
       local line = vim.api.nvim_win_get_cursor(0)[1] - 1
       local node = self._tree:node_by_line(line)
-      if node and node.frame then
-        require("dap").session():_frame_set(node.frame)
+      if session and node and node.frame then
+        session:_frame_set(node.frame)
       end
     end
   })
+
   return self
 end
 

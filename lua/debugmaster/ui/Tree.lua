@@ -2,7 +2,7 @@
 ---@alias dm.NodeRepr nil | dm.HlLine[]
 ---@alias dm.ChildrenIter fun(): dm.NodeTrait?
 
----@class dm.NodeTrait Supposedly it should be template parameter to Tree but since lua-ls doesn't have working support for generics...
+---@class dm.NodeTrait Supposedly it should be template parameter to Tree but since lua-ls doesn't support generic classes...
 ---@field id string
 ---@field is_expanded fun(self): boolean
 ---@field get_children_iter fun(self, depth): dm.ChildrenIter

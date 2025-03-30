@@ -37,7 +37,8 @@ end
 function BreakpointNode:get_repr()
   if not self.bpoints and not self.bpoint then
     local help = {
-      { { "x - remove breakpoint", "Comment"} }
+      { { "t - remove breakpoint or all breakpoints in file", "Comment" } },
+      { { "c - change breakpoint condition", "Comment" } }
     }
     return { { "Breakpoints", "Exception" } }, help
   elseif self.bpoints then
@@ -45,11 +46,16 @@ function BreakpointNode:get_repr()
     path = vim.fn.fnamemodify(path, ":.")
     return { { path, "Statement" } }
   else
+    local vlines = nil
     local indent = "    "
     local linenr = self.bpoint.line
     local line = vim.trim(vim.api.nvim_buf_get_lines(self.bpoint.buf, linenr - 1, linenr, false)[1])
     local text = string.format("%s %s %s", indent, linenr, line)
-    return { { text } }
+    local condition = self.bpoint.condition
+    if condition and condition ~= "" then
+      vlines = { { { indent }, { "condition: ", "Comment" }, { self.bpoint.condition } } }
+    end
+    return { { text } }, vlines
   end
 end
 
@@ -66,6 +72,37 @@ function Breakpoints.new()
   self.name = "[B]points"
   self._tree = Tree.new_with_buf(BreakpointNode.new())
   self.buf = self._tree.buf
+
+  vim.keymap.set("n", "c", function()
+    local line = vim.api.nvim_win_get_cursor(0)[1] - 1
+    ---@type dm.BreakpointNode?
+    local node = self._tree:node_by_line(line)
+    if node and node.bpoint then
+      local bp = node.bpoint
+      local condition = vim.fn.input({ default = bp.condition or "" })
+      breakpoints.set({ condition = condition }, bp.buf, bp.line)
+      self._tree:render()
+    end
+  end, { buffer = self.buf, nowait = true })
+
+
+  vim.keymap.set("n", "t", function()
+    local line = vim.api.nvim_win_get_cursor(0)[1] - 1
+    ---@type dm.BreakpointNode?
+    local node = self._tree:node_by_line(line)
+    if node then
+      if node.bpoint then
+        local bp = node.bpoint
+        breakpoints.remove(bp.buf, bp.line)
+      elseif node.bpoints then
+        local bps = node.bpoints
+        for _, bp in pairs(bps.bpoints) do
+          breakpoints.remove(bps.buf, bp.line)
+        end
+      end
+      self._tree:render()
+    end
+  end, { buffer = self.buf, nowait = true })
 
   dap.listeners.after.setBreakpoints["debugmaster"] = function(session)
     self._tree:render()
