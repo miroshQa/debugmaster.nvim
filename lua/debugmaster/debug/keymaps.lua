@@ -164,11 +164,11 @@ local breakpoings_group = {
       desc = "Toggle breakpoint",
     },
     {
-      key = "db",
+      key = "da",
       action = function()
         require("dap").clear_breakpoints()
       end,
-      desc = "Remove all breakpoints",
+      desc = "Delete all breakpoints",
     },
     {
       key = "dc",
@@ -198,6 +198,13 @@ local misc_group = {
   name = "MISCELANOUS",
   hlgroup = "TYPE",
   mappings = {
+    {
+      key = "dl",
+      desc = "Rerun Last session",
+      action = function ()
+        require("dap").run_last()
+      end
+    },
     {
       key = "Q",
       action = function()
