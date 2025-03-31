@@ -1,7 +1,10 @@
 local mode = require("debugmaster.debug.mode")
+local dap = require("dap")
 
 ---@class dm.ui.Terminal: dm.ui.Sidepanel.IComponent
 local Terminal = {}
+
+local term_buf = nil
 
 function Terminal.new()
   ---@class dm.ui.Terminal
@@ -23,6 +26,24 @@ function Terminal.new()
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
   vim.api.nvim_set_option_value("modifiable", false, { buf = self.buf })
 
+
+  dap.defaults.fallback.terminal_win_cmd = function(cfg)
+    print("terminal created for session", dap.session())
+    term_buf = vim.api.nvim_create_buf(false, false)
+    return term_buf, nil
+  end
+
+  dap.listeners.before.launch["term-setup"] = function()
+    if term_buf then
+      self:attach_terminal(term_buf)
+    end
+    term_buf = nil
+  end
+
+  dap.listeners.before.attach["term-reset"] = function()
+    term_buf = nil
+  end
+
   return self
 end
 
@@ -30,9 +51,9 @@ end
 function Terminal:attach_terminal(buf)
   self.buf = buf
 
-  vim.keymap.set("t", "<Esc>", "<C-\\><C-n>", {buffer = self.buf})
+  vim.keymap.set("t", "<Esc>", "<C-\\><C-n>", { buffer = self.buf })
 
-  vim.api.nvim_create_autocmd({"BufDelete", "BufUnload"}, {
+  vim.api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
     callback = function(args)
       if args.buf == self.buf then
         self.buf = self._dummy_buf
