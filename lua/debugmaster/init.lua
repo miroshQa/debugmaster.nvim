@@ -4,7 +4,8 @@ local keymaps = require("debugmaster.debug.keymaps")
 M.mode = {
   toggle = function()
     require("debugmaster.state")
-    require("debugmaster.debug.cursor")
+    require("debugmaster.plugins.cursor")
+    require("debugmaster.plugins.smart_rerun")
     require("dap")
     require("debugmaster.debug.mode").toggle()
   end

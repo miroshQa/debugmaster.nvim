@@ -149,7 +149,14 @@ local ui_group = {
       end,
       desc = "Inspect variable under cursor",
     },
-
+    {
+      key = "ds",
+      action = function()
+        local widgets = require("dap.ui.widgets")
+        widgets.cursor_float(widgets.sessions)
+      end,
+      desc = "debug sessions",
+    }
   }
 }
 
@@ -199,9 +206,16 @@ local misc_group = {
   hlgroup = "TYPE",
   mappings = {
     {
-      key = "dl",
-      desc = "Rerun Last session",
-      action = function ()
+      key = "dr",
+      desc = "Rerun last session with cached config",
+      action = function()
+        require("debugmaster.plugins.smart_rerun").run_last_cached()
+      end
+    },
+    {
+      key = "dR",
+      desc = "Rerun last session with new params",
+      action = function()
         require("dap").run_last()
       end
     },
