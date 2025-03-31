@@ -1,5 +1,3 @@
-local M = {}
-
 local cursor_mode_off = "n-v-sm:block,i-t-ci-ve-c:ver25,r-cr-o:hor20"
 local cursor_mode_on = "n-v-sm:block-dCursor,i-t-ci-ve-c:ver25,r-cr-o:hor20"
 local cursorline_orig = vim.o.cursorline
@@ -41,13 +39,12 @@ local function on_disable()
   end
 end
 
----@param mode dm.debug.mode
-local function callback_on_change(mode)
-  if mode.is_active() then
-    on_enable()
-  else
-    on_disable()
-  end
-end
+vim.api.nvim_create_autocmd("User", {
+  pattern = "DebugModeEnabled",
+  callback = vim.schedule_wrap(on_enable)
+})
 
-require("debugmaster.debug.mode").add_callback_on_change(callback_on_change)
+vim.api.nvim_create_autocmd("User", {
+  pattern = "DebugModeDisabled",
+  callback = vim.schedule_wrap(on_disable)
+})

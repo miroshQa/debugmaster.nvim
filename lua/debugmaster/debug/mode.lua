@@ -14,13 +14,7 @@ local groups = require("debugmaster.debug.keymaps").groups
 ---@field silent boolean?
 
 ---@type table<string, dm.OrignalKeymap>
-local originals = {
-}
-
----@alias dm.debug.mode.callback fun(mode: dm.debug.mode)
-
----@type dm.debug.mode.callback[]
-local callbacks = {}
+local originals = {}
 
 local function save_original_settings()
   local all = vim.api.nvim_get_keymap("n")
@@ -57,7 +51,7 @@ function M.activate()
       vim.keymap.set("n", mapping.key, action, { nowait = mapping.nowait })
     end
   end
-  M._notify_all()
+  vim.api.nvim_exec_autocmds("User", { pattern = "DebugModeEnabled" })
 end
 
 function M.disable()
@@ -76,18 +70,7 @@ function M.disable()
       })
     end
   end
-  M._notify_all()
-end
-
-function M._notify_all()
-  for _, listener in ipairs(callbacks) do
-    listener(M)
-  end
-end
-
----@param callback dm.debug.mode.callback
-function M.add_callback_on_change(callback)
-  table.insert(callbacks, callback)
+  vim.api.nvim_exec_autocmds("User", { pattern = "DebugModeDisabled" })
 end
 
 function M.toggle()
