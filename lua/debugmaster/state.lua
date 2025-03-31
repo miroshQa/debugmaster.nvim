@@ -1,4 +1,3 @@
-local dap = require("dap")
 local groups = require("debugmaster.debug.keymaps").groups
 
 ---@class dm.State
@@ -18,23 +17,5 @@ M.sidepanel:add_component(M.breakpoints)
 M.sidepanel:add_component(M.help)
 
 M.sidepanel:set_active(M.scopes)
-
-dap.listeners.before.launch["dm-autoopen"] = function()
-  M.sidepanel:open()
-end
-
-dap.listeners.before.attach["dm-autoopen"] = function()
-  M.sidepanel:open()
-end
-
-dap.listeners.before.event_terminated["dm-autoclose"] = function()
-  M.sidepanel:close()
-  print("dap terminated")
-end
-
-dap.listeners.before.event_exited["dm-autoclose"] = function()
-  M.sidepanel:close()
-  print("dap exited")
-end
 
 return M

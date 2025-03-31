@@ -28,7 +28,6 @@ function Terminal.new()
 
 
   dap.defaults.fallback.terminal_win_cmd = function(cfg)
-    print("terminal created for session", dap.session())
     term_buf = vim.api.nvim_create_buf(false, false)
     return term_buf, nil
   end
