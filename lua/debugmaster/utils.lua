@@ -41,14 +41,14 @@ function M.make_center_float_win_cfg()
   local width = math.ceil(math.min(vim.o.columns, math.max(80, vim.o.columns - 10)))
   ---@type vim.api.keyset.win_config
   local cfg = {
-      relative = "editor",
-      border = "rounded",
-      width = width,
-      height = height,
-      row = math.ceil(vim.o.lines - height) * 0.5 - 1,
-      col = math.ceil(vim.o.columns - width) * 0.5 - 1
-    }
-    return cfg
+    relative = "editor",
+    border = "rounded",
+    width = width,
+    height = height,
+    row = math.ceil(vim.o.lines - height) * 0.5 - 1,
+    col = math.ceil(vim.o.columns - width) * 0.5 - 1
+  }
+  return cfg
 end
 
 ---@param win number
@@ -85,5 +85,30 @@ function M.get_windows_for_buffer(buf)
     return windows
 end
 
-return M
+function M.open_floating_window(bufnr)
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local max_width = 1
+    for _, line in ipairs(lines) do
+        max_width = math.max(max_width, vim.fn.strdisplaywidth(line))
+    end
+    local height = math.max(#lines, 1)
 
+    ---@type vim.api.keyset.win_config
+    local win_config = {
+        row = 0,
+        col = 0,
+        relative = 'cursor',
+        width = max_width,
+        height = height + 3,
+        style = 'minimal',
+        border = "rounded",
+        focusable = true
+    }
+
+    -- Create and configure window
+    local win = vim.api.nvim_open_win(bufnr, true, win_config)
+    M.register_to_close_on_leave(win)
+    return win
+end
+
+return M

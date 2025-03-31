@@ -63,7 +63,6 @@ return {
 
 ## Roadmap
 - [ ] Functional tests
-- [ ] Remove breakponts section and make it float based like with frames and threads
 
 ## Recipes
 1. An example of how to display DEBUG mode in your status line can be found here:

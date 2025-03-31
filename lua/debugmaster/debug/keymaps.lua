@@ -95,14 +95,6 @@ local ui_group = {
       desc = "Open repl",
     },
     {
-      key = "B",
-      action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.breakpoints)
-      end,
-      desc = "Open breakpoints",
-    },
-    {
       key = "H",
       action = function()
         local state = require("debugmaster.state")
@@ -163,6 +155,15 @@ local ui_group = {
         end), { expr = true, buffer = sessions.buf })
       end,
       desc = "debug sessions",
+    },
+    {
+      key = "dp",
+      action = function()
+        local state = require("debugmaster.state")
+        utils.open_floating_window(state.breakpoints.buf)
+        vim.bo[state.breakpoints.buf].filetype = "dap-float"
+      end,
+      desc = "Float breakpoints"
     },
     {
       key = "dn",
