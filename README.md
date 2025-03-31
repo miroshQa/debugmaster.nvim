@@ -32,7 +32,8 @@ return {
     "miroshQa/debugmaster.nvim",
     config = function()
       local dm = require("debugmaster")
-      vim.keymap.set("n", "<leader>d", dm.mode.toggle, { nowait = true })
+      vim.keymap.set({ "n", "t" }, "<leader>d", dm.mode.toggle, { nowait = true })
+      vim.keymap.set("t", "<Esc>", "<C-\\><C-n>", {desc = "Exit terminal mode"})
       
       -- Example keymap modification:
       dm.keys.get("q").key = "O"
@@ -62,6 +63,7 @@ return {
 
 ## Roadmap
 - [ ] Functional tests
+- [ ] Remove breakponts section and make it float based like with frames and threads
 
 ## Recipes
 1. An example of how to display DEBUG mode in your status line can be found here:

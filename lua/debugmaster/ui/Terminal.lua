@@ -27,46 +27,54 @@ function Terminal.new()
 
 
   dap.defaults.fallback.terminal_win_cmd = function(cfg)
-    local session = assert(dap.session(), "Terminal window created but session doesn't exist. How?")
     local term_buf = vim.api.nvim_create_buf(false, false)
-    terms_per_session[session.id] = term_buf
+    print("new buf created", term_buf)
+    self:attach_terminal_to_current_session(term_buf)
     return term_buf, nil
-  end
-
-  local on_session_change = function()
-    local session = assert(dap.session())
-    local term_buf = terms_per_session[session.id]
-    if term_buf then
-      self:attach_terminal(term_buf)
-    else
-      self.buf = self._dummy_buf
-    end
-    vim.api.nvim_exec_autocmds("User", {pattern = "WidgetBufferNumberChanged"})
   end
 
   vim.api.nvim_create_autocmd("User", {
     pattern = "DapSessionChanged",
-    callback = on_session_change,
+    callback = vim.schedule_wrap(function()
+      local session = assert(dap.session())
+      local term = terms_per_session[session.id] or self._dummy_buf
+      self.buf = term
+      print("new_buf", term)
+      vim.api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
+    end),
   })
 
-  dap.listeners.after.launch["term-setup"] = on_session_change
-  dap.listeners.after.attach["term-reset"] = on_session_change
   return self
 end
 
 ---@param buf number
-function Terminal:attach_terminal(buf)
-  self.buf = buf
+---@return boolean indicate if attach was successful
+function Terminal:attach_terminal_to_current_session(buf)
+  local session = dap.session()
+  if not session then
+    print("Can't attach terminal. No active session")
+    return false
+  elseif terms_per_session[session.id] then
+    print("Can't attach terminal. Already attached")
+    return false
+  end
 
-  vim.keymap.set("t", "<Esc>", "<C-\\><C-n>", { buffer = self.buf })
+  print("attached", buf, "to the session with id:", session.id)
+  terms_per_session[session.id] = buf
+  self.buf = buf
+  vim.api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
 
   vim.api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
     callback = function(args)
       if args.buf == self.buf then
         self.buf = self._dummy_buf
+        terms_per_session[session.id] = nil
+        vim.api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
       end
     end
   })
+
+  return true
 end
 
 return Terminal

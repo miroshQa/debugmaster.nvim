@@ -74,5 +74,16 @@ end
 function M.status_line_apply_hl(str, hlGroup)
   return "%#" .. hlGroup .. "#" .. str .. "%*"
 end
+
+function M.get_windows_for_buffer(buf)
+    local windows = {}
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.api.nvim_win_get_buf(win) == buf then
+            table.insert(windows, win)
+        end
+    end
+    return windows
+end
+
 return M
 

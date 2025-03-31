@@ -157,10 +157,10 @@ local ui_group = {
         if not ok then
           return
         end
-        vim.keymap.set("n", "<CR>", function()
+        vim.keymap.set("n", "<CR>", vim.schedule_wrap(function()
+          require('dap.ui').trigger_actions({ mode = 'first' })
           vim.api.nvim_exec_autocmds("User", { pattern = "DapSessionChanged" })
-          return "<Cmd>lua require('dap.ui').trigger_actions({ mode = 'first' })<CR>"
-        end, { expr = true, buffer = sessions.buf })
+        end), { expr = true, buffer = sessions.buf })
       end,
       desc = "debug sessions",
     },
@@ -257,7 +257,27 @@ local misc_group = {
       action = function() require("dap").up() end,
       desc = "Go to next frame"
     },
-
+    {
+      key = "dm",
+      action = function()
+        local state = require("debugmaster.state")
+        local terminal = state.terminal
+        local buf = vim.api.nvim_get_current_buf()
+        local is_term = vim.api.nvim_get_option_value('buftype', { buf = buf }) == 'terminal'
+        if not is_term then
+          return print("Current buffer isn't terminal. Can't move to the Terminal section")
+        end
+        local ok = terminal:attach_terminal_to_current_session(buf)
+        if ok then
+          for _, win in ipairs(utils.get_windows_for_buffer(buf)) do
+            vim.api.nvim_win_close(win, true)
+          end
+          state.sidepanel:open()
+          state.sidepanel:set_active(terminal)
+        end
+      end,
+      desc = "Move current terminal to the 'Terminal' segment"
+    },
   }
 }
 

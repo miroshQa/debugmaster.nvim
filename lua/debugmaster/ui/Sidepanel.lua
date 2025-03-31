@@ -25,6 +25,7 @@ function Sidepanel.new()
     callback = vim.schedule_wrap(function(args)
       if self.active and self:is_open() then
         vim.api.nvim_win_set_buf(self.win, self.active.buf)
+        self:_cook_winbar()
       end
     end)
   })
