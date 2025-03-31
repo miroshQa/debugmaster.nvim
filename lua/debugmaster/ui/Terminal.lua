@@ -1,10 +1,9 @@
-local mode = require("debugmaster.debug.mode")
 local dap = require("dap")
 
 ---@class dm.ui.Terminal: dm.ui.Sidepanel.IComponent
 local Terminal = {}
 
-local term_buf = nil
+local terms_per_session = {}
 
 function Terminal.new()
   ---@class dm.ui.Terminal
@@ -28,21 +27,30 @@ function Terminal.new()
 
 
   dap.defaults.fallback.terminal_win_cmd = function(cfg)
-    term_buf = vim.api.nvim_create_buf(false, false)
+    local session = assert(dap.session(), "Terminal window created but session doesn't exist. How?")
+    local term_buf = vim.api.nvim_create_buf(false, false)
+    terms_per_session[session.id] = term_buf
     return term_buf, nil
   end
 
-  dap.listeners.before.launch["term-setup"] = function()
+  local on_session_change = function()
+    local session = assert(dap.session())
+    local term_buf = terms_per_session[session.id]
     if term_buf then
       self:attach_terminal(term_buf)
+    else
+      self.buf = self._dummy_buf
     end
-    term_buf = nil
+    vim.api.nvim_exec_autocmds("User", {pattern = "WidgetBufferNumberChanged"})
   end
 
-  dap.listeners.before.attach["term-reset"] = function()
-    term_buf = nil
-  end
+  vim.api.nvim_create_autocmd("User", {
+    pattern = "DapSessionChanged",
+    callback = on_session_change,
+  })
 
+  dap.listeners.after.launch["term-setup"] = on_session_change
+  dap.listeners.after.attach["term-reset"] = on_session_change
   return self
 end
 

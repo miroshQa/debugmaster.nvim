@@ -153,9 +153,20 @@ local ui_group = {
       key = "ds",
       action = function()
         local widgets = require("dap.ui.widgets")
-        widgets.cursor_float(widgets.sessions)
+        local sessions = widgets.cursor_float(widgets.sessions)
+        vim.keymap.set("n", "<CR>", function()
+          vim.api.nvim_exec_autocmds("User", { pattern = "DapSessionChanged" })
+          return "<Cmd>lua require('dap.ui').trigger_actions({ mode = 'first' })<CR>"
+        end, { expr = true, buffer = sessions.buf })
       end,
       desc = "debug sessions",
+    },
+    {
+      key = "dn",
+      action = function()
+        vim.cmd("DapNew")
+      end,
+      desc = "Debug start new sessions",
     }
   }
 }

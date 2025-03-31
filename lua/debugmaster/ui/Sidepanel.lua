@@ -3,7 +3,6 @@ local utils = require("debugmaster.utils")
 ---@class dm.ui.Sidepanel.IComponent
 ---@field name string
 ---@field buf number
----@field cb_on_buf_id_change fun() | nil Allows to notify sidepanel if buf changed
 
 ---@class dm.ui.Sidepanel
 local Sidepanel = {}
@@ -20,8 +19,15 @@ function Sidepanel.new()
   self.components = {}
   ---@type dm.ui.Sidepanel.IComponent
   self.active = nil
-  ---@type fun(buf: number)
-  self._on_set_active_callback = nil
+
+  vim.api.nvim_create_autocmd("User", {
+    pattern = "WidgetBufferNumberChanged",
+    callback = vim.schedule_wrap(function(args)
+      if self.active and self:is_open() then
+        vim.api.nvim_win_set_buf(self.win, self.active.buf)
+      end
+    end)
+  })
 
   return self
 end
@@ -154,10 +160,6 @@ function Sidepanel:set_active(comp)
     vim.api.nvim_win_set_buf(self.win, self.active.buf)
     self:_cook_winbar()
   end
-
-  if self._on_set_active_callback then
-    self._on_set_active_callback(self.active.buf)
-  end
 end
 
 -- if this comp already active then it do nothing
@@ -174,11 +176,6 @@ end
 ---@param comp dm.ui.Sidepanel.IComponent
 function Sidepanel:add_component(comp)
   table.insert(self.components, comp)
-end
-
----@param callback fun(buf: number)
-function Sidepanel:set_on_active_callback(callback)
-  self._on_set_active_callback = callback
 end
 
 return Sidepanel

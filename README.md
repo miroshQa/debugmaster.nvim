@@ -62,7 +62,6 @@ return {
 
 ## Roadmap
 - [ ] Functional tests
-- [ ] Handle multiple sessions properly
 
 ## Recipes
 1. An example of how to display DEBUG mode in your status line can be found here:
