@@ -123,6 +123,7 @@ local ui_group = {
       action = function()
         local widgets = require("dap.ui.widgets")
         pcall(widgets.cursor_float, widgets.frames)
+        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
       end,
       desc = "frames float"
     },
@@ -131,6 +132,7 @@ local ui_group = {
       action = function()
         local widgets = require("dap.ui.widgets")
         pcall(widgets.cursor_float, widgets.threads)
+        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
       end,
       desc = "threads float"
     },
@@ -138,6 +140,7 @@ local ui_group = {
       key = "di",
       action = function()
         pcall(require('dap.ui.widgets').hover)
+        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
       end,
       desc = "Inspect variable under cursor",
     },
@@ -149,6 +152,7 @@ local ui_group = {
         if not ok then
           return
         end
+        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
         vim.keymap.set("n", "<CR>", vim.schedule_wrap(function()
           require('dap.ui').trigger_actions({ mode = 'first' })
           vim.api.nvim_exec_autocmds("User", { pattern = "DapSessionChanged" })
@@ -161,6 +165,7 @@ local ui_group = {
       action = function()
         local state = require("debugmaster.state")
         utils.open_floating_window(state.breakpoints.buf)
+        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
         vim.bo[state.breakpoints.buf].filetype = "dap-float"
       end,
       desc = "Float breakpoints"

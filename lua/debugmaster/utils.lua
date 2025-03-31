@@ -107,7 +107,6 @@ function M.open_floating_window(bufnr)
 
     -- Create and configure window
     local win = vim.api.nvim_open_win(bufnr, true, win_config)
-    M.register_to_close_on_leave(win)
     return win
 end
 
