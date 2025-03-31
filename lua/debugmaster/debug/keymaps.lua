@@ -130,7 +130,7 @@ local ui_group = {
       key = "df",
       action = function()
         local widgets = require("dap.ui.widgets")
-        widgets.cursor_float(widgets.frames)
+        pcall(widgets.cursor_float, widgets.frames)
       end,
       desc = "frames float"
     },
@@ -138,7 +138,7 @@ local ui_group = {
       key = "dt",
       action = function()
         local widgets = require("dap.ui.widgets")
-        widgets.cursor_float(widgets.threads)
+        pcall(widgets.cursor_float, widgets.threads)
       end,
       desc = "threads float"
     },
@@ -153,7 +153,10 @@ local ui_group = {
       key = "ds",
       action = function()
         local widgets = require("dap.ui.widgets")
-        local sessions = widgets.cursor_float(widgets.sessions)
+        local ok, sessions = pcall(widgets.cursor_float, widgets.sessions)
+        if not ok then
+          return
+        end
         vim.keymap.set("n", "<CR>", function()
           vim.api.nvim_exec_autocmds("User", { pattern = "DapSessionChanged" })
           return "<Cmd>lua require('dap.ui').trigger_actions({ mode = 'first' })<CR>"
