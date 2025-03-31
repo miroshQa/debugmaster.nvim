@@ -36,7 +36,6 @@ function Tree:render(start)
   local line_num = 0
 
   local function render_node(node, depth)
-    -- Get both regular segments and virtual lines
     local segments, virtual_lines = node:get_repr(depth)
     segments = segments or {}
 
@@ -56,12 +55,10 @@ function Tree:render(start)
       current_col = current_col + #seg[1]
     end
 
-    -- Record node and advance line number
     table.insert(lines, line_text)
     self._nodes_by_line[line_num] = node
     self._nodes_by_id[node.id] = node
 
-    -- Store virtual lines if provided
     if virtual_lines and #virtual_lines > 0 then
       table.insert(virt_line_marks, {
         line = line_num,
@@ -71,7 +68,6 @@ function Tree:render(start)
 
     line_num = line_num + 1
 
-    -- Render children if expanded
     if node:is_expanded() then
       for child in node:get_children_iter(depth) do
         render_node(child, depth + 1)
@@ -81,11 +77,9 @@ function Tree:render(start)
 
   render_node(self.root, 0)
 
-  -- Update buffer
   vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
   vim.api.nvim_buf_clear_namespace(self.buf, self._ns_id, 0, -1)
 
-  -- Apply syntax highlights
   for _, h in ipairs(highlights) do
     vim.api.nvim_buf_add_highlight(
       self.buf,
@@ -97,7 +91,6 @@ function Tree:render(start)
     )
   end
 
-  -- Add virtual lines using extmarks
   for _, mark in ipairs(virt_line_marks) do
     vim.api.nvim_buf_set_extmark(
       self.buf,
