@@ -105,15 +105,29 @@ function Sidepanel:_cook_winbar()
   end
   local max_indent = math.floor((win_width - join_text_width) / #self.components)
   local indent = string.rep(" ", max_indent)
+
   local winbar = {}
-  for _, comp in ipairs(self.components) do
+  for i, comp in ipairs(self.components) do
     local text = comp.name
+    -- Each clickable region needs a unique identifier (using index i)
+    text = string.format("%%%d@v:lua.DebugmasterClickWinbar@%s%%*", i, text)
+
     if comp == self.active then
+      -- Apply highlight after the clickable region
       text = utils.status_line_apply_hl(text, "Exception")
     end
+
     table.insert(winbar, text)
   end
+
   vim.wo[self.win].winbar = table.concat(winbar, indent)
+end
+
+function DebugmasterClickWinbar(index)
+  -- this code is absolutely cursed, don't want to even speak about this...
+  local self = require("debugmaster.state").sidepanel
+  local comp = self.components[index]
+  self:set_active(comp)
 end
 
 function Sidepanel:close()

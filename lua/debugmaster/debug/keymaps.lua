@@ -161,7 +161,7 @@ local ui_group = {
       desc = "debug sessions",
     },
     {
-      key = "dp",
+      key = "db",
       action = function()
         local state = require("debugmaster.state")
         utils.open_floating_window(state.breakpoints.buf)
