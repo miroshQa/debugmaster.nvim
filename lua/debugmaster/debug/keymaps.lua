@@ -79,12 +79,12 @@ local ui_group = {
       desc = "Open scopes (global, local, etc variables)",
     },
     {
-      key = "P",
+      key = "T",
       action = function()
         local state = require("debugmaster.state")
         state.sidepanel:set_active_with_open(state.terminal)
       end,
-      desc = "Open program output (terminal)",
+      desc = "Open terminal",
     },
     {
       key = "R",

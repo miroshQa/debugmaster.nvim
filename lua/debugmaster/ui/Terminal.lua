@@ -8,7 +8,7 @@ local terms_per_session = {}
 function Terminal.new()
   ---@class dm.ui.Terminal
   local self = setmetatable({}, { __index = Terminal })
-  self.name = "[P]rogram"
+  self.name = "[T]erminal"
 
   self._dummy_buf = vim.api.nvim_create_buf(false, true)
   self.buf = self._dummy_buf
