@@ -28,6 +28,7 @@ function Tree.new_with_buf(root)
 end
 
 function Tree:render(start)
+  vim.api.nvim_set_option_value("modifiable", true, { buf = self.buf })
   self._nodes_by_line = {}
   self._nodes_by_id = {}
   local lines = {}
@@ -103,6 +104,7 @@ function Tree:render(start)
       }
     )
   end
+  vim.api.nvim_set_option_value("modifiable", false, { buf = self.buf })
 end
 
 function Tree:node_by_line(linenr)

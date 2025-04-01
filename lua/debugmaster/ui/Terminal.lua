@@ -28,7 +28,6 @@ function Terminal.new()
 
   dap.defaults.fallback.terminal_win_cmd = function(cfg)
     local term_buf = vim.api.nvim_create_buf(false, false)
-    print("new buf created", term_buf)
     self:attach_terminal_to_current_session(term_buf)
     return term_buf, nil
   end
@@ -39,7 +38,6 @@ function Terminal.new()
       local session = assert(dap.session())
       local term = terms_per_session[session.id] or self._dummy_buf
       self.buf = term
-      print("new_buf", term)
       vim.api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
     end),
   })
@@ -59,7 +57,6 @@ function Terminal:attach_terminal_to_current_session(buf)
     return false
   end
 
-  print("attached", buf, "to the session with id:", session.id)
   terms_per_session[session.id] = buf
   self.buf = buf
   vim.api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })

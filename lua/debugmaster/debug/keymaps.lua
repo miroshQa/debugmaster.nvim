@@ -137,14 +137,6 @@ local ui_group = {
       desc = "threads float"
     },
     {
-      key = "di",
-      action = function()
-        pcall(require('dap.ui.widgets').hover)
-        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
-      end,
-      desc = "Inspect variable under cursor",
-    },
-    {
       key = "ds",
       action = function()
         local widgets = require("dap.ui.widgets")
@@ -172,12 +164,13 @@ local ui_group = {
       desc = "Float breakpoints"
     },
     {
-      key = "dn",
+      key = "di",
       action = function()
-        vim.cmd("DapNew")
+        pcall(require('dap.ui.widgets').hover)
+        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
       end,
-      desc = "Debug start new sessions",
-    }
+      desc = "Inspect variable under cursor",
+    },
   }
 }
 
@@ -239,6 +232,13 @@ local misc_group = {
       action = function()
         require("dap").run_last()
       end
+    },
+    {
+      key = "dn",
+      action = function()
+        vim.cmd("DapNew")
+      end,
+      desc = "Debug start new sessions",
     },
     {
       key = "Q",
