@@ -54,7 +54,7 @@ return {
 ## Design Philosophy
 ### 1. Transparent debugging workflow
 - Maintains standard normal-mode navigation
-- Only overrides edit-related keys (`p`, `J`, `S`, `d`, `D`, `c`, `C`)
+- Only overrides edit-related keys (`p`, `J`, `S`, `d`, `D`, `c`, `C`) and don't override movement motions (like h, j, k, l, f, w, e, etc..)
 
 ### 2. Not invasive interface
 - Single-panel interface that can operate in either:

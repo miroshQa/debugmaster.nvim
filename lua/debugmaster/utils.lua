@@ -98,7 +98,7 @@ function M.open_floating_window(bufnr)
         row = 0,
         col = 0,
         relative = 'cursor',
-        width = max_width,
+        width = max_width + 60,
         height = height + 3,
         style = 'minimal',
         border = "rounded",

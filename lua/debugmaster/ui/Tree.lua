@@ -81,26 +81,16 @@ function Tree:render(start)
   vim.api.nvim_buf_clear_namespace(self.buf, self._ns_id, 0, -1)
 
   for _, h in ipairs(highlights) do
-    vim.api.nvim_buf_add_highlight(
-      self.buf,
-      self._ns_id,
-      h.hl,
-      h.line,
-      h.start,
-      h["end"]
-    )
+    vim.api.nvim_buf_add_highlight(self.buf, self._ns_id, h.hl, h.line, h.start, h["end"])
   end
 
   for _, mark in ipairs(virt_line_marks) do
     vim.api.nvim_buf_set_extmark(
       self.buf,
       self._ns_id,
-      mark.line, -- 0-based line number
-      0,         -- 0-based column
-      {
-        virt_lines = mark.lines,
-        virt_lines_above = false,
-      }
+      mark.line,
+      0,
+      { virt_lines = mark.lines, virt_lines_above = false }
     )
   end
 end
