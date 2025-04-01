@@ -156,6 +156,7 @@ local ui_group = {
         vim.keymap.set("n", "<CR>", vim.schedule_wrap(function()
           require('dap.ui').trigger_actions({ mode = 'first' })
           vim.api.nvim_exec_autocmds("User", { pattern = "DapSessionChanged" })
+          require("dap").focus_frame()
         end), { expr = true, buffer = sessions.buf })
       end,
       desc = "debug sessions",
