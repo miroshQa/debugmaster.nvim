@@ -1,0 +1,96 @@
+name: Bug Report
+description: Report a bug/issue
+title: "BUG: "
+labels: [bug]
+body:
+  - type: checkboxes
+    attributes:
+      label: Did you check docs and existing issues?
+      description: Make sure you checked all of the below before submitting an issue
+      options:
+        - label: I have read all the docs.
+          required: true
+        - label: I have searched the existing issues.
+          required: true
+  - type: input
+    attributes:
+      label: "Neovim version (nvim -v)"
+      placeholder: "0.10.0"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: "Operating system/version"
+      placeholder: "Linux"
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps To Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1.
+        2. 
+        3.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected Behavior
+      description: A concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Repro
+      description: Minimal `init.lua` to reproduce this issue. Save as `init.lua` and run with `nvim -u init.lua`
+      value: |
+        -- set stdpaths to the current directory
+        local initlua_root = vim.fn.fnamemodify(debug.getinfo(1).short_src, ":p:h")
+        for _, name in ipairs { "config", "data", "state", "cache" } do
+          vim.env[("XDG_%s_HOME"):format(name:upper())] = initlua_root .. "/" .. name
+        end
+
+        -- bootstrap lazy
+        local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+        if not vim.uv.fs_stat(lazypath) then
+          local lazyrepo = "https://github.com/folke/lazy.nvim.git"
+          vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
+        end
+        vim.opt.rtp:prepend(lazypath)
+
+
+        require("lazy").setup({
+          spec = {
+            {
+              {
+                "mfussenegger/nvim-dap",
+                config = function()
+                  local dap = require("dap")
+                  -- Configure your debug adapters here
+                  -- https://github.com/mfussenegger/nvim-dap/blob/master/doc/dap.txt
+                end,
+              },
+              {
+                "miroshQa/debugmaster.nvim",
+                config = function()
+                  local dm = require("debugmaster")
+                  vim.keymap.set({ "n", "t" }, "<leader>d", dm.mode.toggle, { nowait = true })
+                  vim.keymap.set("t", "<Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
+
+                  -- Example keymap modification:
+                  dm.keys.get("q").key = "O"
+                end
+              }
+            }
+          },
+        })
+      render: lua
+    validations:
+      required: false
