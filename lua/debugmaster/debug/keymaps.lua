@@ -188,6 +188,7 @@ local breakpoings_group = {
       key = "da",
       action = function()
         require("dap").clear_breakpoints()
+        print("All breakpoints removed")
       end,
       desc = "Delete all breakpoints",
     },
