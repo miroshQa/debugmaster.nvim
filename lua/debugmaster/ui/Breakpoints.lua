@@ -104,6 +104,21 @@ function Breakpoints.new()
     end
   end, { buffer = self.buf, nowait = true })
 
+  vim.keymap.set("n", "<CR>", function()
+    local line = vim.api.nvim_win_get_cursor(0)[1] - 1
+    ---@type dm.BreakpointNode?
+    local node = self._tree:node_by_line(line)
+    if node then
+      if node.bpoint then
+        local bp = node.bpoint
+        breakpoints.remove(bp.buf, bp.line)
+        vim.cmd("q")
+        vim.cmd("buffer " .. bp.buf)
+        vim.cmd("normal " .. bp.line .. "G")
+      end
+    end
+  end)
+
   dap.listeners.after.setBreakpoints["debugmaster"] = function(session)
     self._tree:render()
   end

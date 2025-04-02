@@ -241,6 +241,13 @@ local misc_group = {
       desc = "Debug start new sessions",
     },
     {
+      key = "dp",
+      action = function()
+        vim.cmd("DapPause")
+      end,
+      desc = "Pause the current thread or pick a thread to pause",
+    },
+    {
       key = "Q",
       action = function()
         require("dap").terminate()
