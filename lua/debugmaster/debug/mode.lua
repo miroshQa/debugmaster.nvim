@@ -40,7 +40,7 @@ local function save_original_settings()
 end
 save_original_settings()
 
-function M.activate()
+function M.enable()
   if active then
     return
   end
@@ -51,7 +51,7 @@ function M.activate()
       vim.keymap.set("n", mapping.key, action, { nowait = mapping.nowait })
     end
   end
-  vim.api.nvim_exec_autocmds("User", { pattern = "DebugModeEnabled" })
+  vim.api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = true } })
 end
 
 function M.disable()
@@ -70,15 +70,11 @@ function M.disable()
       })
     end
   end
-  vim.api.nvim_exec_autocmds("User", { pattern = "DebugModeDisabled" })
+  vim.api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = false } })
 end
 
 function M.toggle()
-  if active then
-    M.disable()
-  else
-    M.activate()
-  end
+  (active and M.disable or M.enable)()
 end
 
 function M.is_active()

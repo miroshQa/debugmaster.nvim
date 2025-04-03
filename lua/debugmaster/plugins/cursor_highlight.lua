@@ -40,11 +40,8 @@ local function on_disable()
 end
 
 vim.api.nvim_create_autocmd("User", {
-  pattern = "DebugModeEnabled",
-  callback = vim.schedule_wrap(on_enable)
-})
-
-vim.api.nvim_create_autocmd("User", {
-  pattern = "DebugModeDisabled",
-  callback = vim.schedule_wrap(on_disable)
+  pattern = "DebugModeChanged",
+  callback = function(args)
+    (args.data.enabled and on_enable or on_disable)()
+  end
 })
