@@ -261,6 +261,11 @@ local misc_group = {
       desc = "Go to next stack frame"
     },
     {
+      key = "dj",
+      action = function() require("dap").focus_frame() end,
+      desc = "Jump to the current stack frame"
+    },
+    {
       key = "dm",
       action = function()
         local state = require("debugmaster.state")
