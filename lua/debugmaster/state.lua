@@ -11,8 +11,8 @@ M.help = require("debugmaster.ui.Help").new(groups)
 M.breakpoints = require("debugmaster.ui.Breakpoints").new()
 
 M.sidepanel:add_component(M.scopes)
-M.sidepanel:add_component(M.terminal)
 M.sidepanel:add_component(M.repl)
+M.sidepanel:add_component(M.terminal)
 M.sidepanel:add_component(M.help)
 
 M.sidepanel:set_active(M.scopes)

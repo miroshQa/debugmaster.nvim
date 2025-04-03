@@ -266,6 +266,18 @@ local misc_group = {
       desc = "Jump to the current stack frame"
     },
     {
+      key = "de",
+      action = function()
+        local state = require("debugmaster.state")
+        require("dap").repl.execute(vim.fn.getreg('"'))
+        state.sidepanel:set_active_with_open(state.repl)
+        vim.api.nvim_buf_call(state.repl.buf, function()
+          vim.cmd("normal G")
+        end)
+      end,
+      desc = "Execute last yanked or deleted text in the repl"
+    },
+    {
       key = "dm",
       action = function()
         local state = require("debugmaster.state")
