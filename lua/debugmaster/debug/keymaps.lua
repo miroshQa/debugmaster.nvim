@@ -251,14 +251,14 @@ local misc_group = {
       desc = "Quit debug (terminate debug)"
     },
     {
-      key = "[f",
+      key = "[s",
       action = function() require("dap").down() end,
-      desc = "Go to previous frame"
+      desc = "Go to previous stack frame"
     },
     {
-      key = "]f",
+      key = "]s",
       action = function() require("dap").up() end,
-      desc = "Go to next frame"
+      desc = "Go to next stack frame"
     },
     {
       key = "dm",
