@@ -266,7 +266,7 @@ local misc_group = {
       desc = "Jump to the current stack frame"
     },
     {
-      key = "de",
+      key = "x",
       action = function()
         local state = require("debugmaster.state")
         require("dap").repl.execute(vim.fn.getreg('"'))
