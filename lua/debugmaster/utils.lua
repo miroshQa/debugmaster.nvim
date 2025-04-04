@@ -53,18 +53,13 @@ end
 
 ---@param win number
 function M.register_to_close_on_leave(win)
-    local buf = vim.api.nvim_win_get_buf(win)
     local id
     id = vim.api.nvim_create_autocmd("WinLeave", {
       callback = function(args)
-        if not vim.api.nvim_win_is_valid(win) then
-          return vim.api.nvim_del_autocmd(id)
-        end
-
-        if buf == args.buf then
+        if vim.api.nvim_win_is_valid(win) then
           vim.api.nvim_win_close(win, true)
-          return vim.api.nvim_del_autocmd(id)
         end
+        vim.api.nvim_del_autocmd(id)
       end
     })
 end
