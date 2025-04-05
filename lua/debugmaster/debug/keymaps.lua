@@ -281,7 +281,7 @@ local misc_group = {
         if mode == "v" or mode == "V" then
           text = table.concat(utils.get_visual_selected_text() or {}, "\n")
         end
-        require("dap").repl.execute(text)
+        require("dap").repl.execute("\n" .. text)
         state.sidepanel:set_active_with_open(state.repl)
         vim.api.nvim_buf_call(state.repl.buf, function()
           vim.cmd("normal G")

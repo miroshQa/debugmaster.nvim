@@ -1,5 +1,6 @@
 local utils = require("debugmaster.utils")
 local repl = require 'dap.repl'
+local dap = require("dap")
 
 ---@class dm.ui.Repl: dm.ui.Sidepanel.IComponent
 local Repl = {}
@@ -15,6 +16,12 @@ function Repl.new()
   -- https://github.com/mfussenegger/nvim-dap/issues/786
   vim.keymap.set("i", "<C-w>", "<C-S-w>", {buffer = self.buf})
   vim.keymap.set("n", "<Tab>", "<CR>", {buffer = self.buf, remap = true})
+
+  dap.listeners.after.initialize["repl-hl"] = function(session, err, response, args, seq)
+    pcall(vim.treesitter.stop, self.buf)
+    pcall(vim.treesitter.start, self.buf, vim.o.filetype)
+  end
+
   return self
 end
 
