@@ -26,6 +26,7 @@ local function save_original_settings()
 
   for _, group in ipairs(groups) do
     for _, mapping in ipairs(group.mappings) do
+      local mode = mapping.mode or "n"
       local key = mapping.key
       originals[key] = {}
       local orig = lhs_to_map[key]
@@ -48,7 +49,8 @@ function M.enable()
   for _, group in ipairs(groups) do
     for _, mapping in ipairs(group.mappings) do
       local action = mapping.action
-      vim.keymap.set("n", mapping.key, action, { nowait = mapping.nowait })
+      local mode = mapping.mode or "n"
+      vim.keymap.set(mode, mapping.key, action, { nowait = mapping.nowait })
     end
   end
   vim.api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = true } })
@@ -64,6 +66,7 @@ function M.disable()
       local key = mapping.key
       local orig = originals[key]
       local rhs = orig.callback or orig.rhs or key
+      local mode = mapping.mode or "n"
       vim.keymap.set("n", key, rhs, {
         desc = orig.desc,
         silent = orig.silent,

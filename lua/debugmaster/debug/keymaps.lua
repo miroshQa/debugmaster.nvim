@@ -7,6 +7,8 @@ local M = {}
 ---@field desc string?
 ---@field nowait boolean?
 ---@field group string?
+---@field mode table | string | nil "n" by default. Like in vim.keymap.set in all other cases
+
 
 ---@class dm.MappingsGroup
 ---@field name string? Group name. Not shown in HelpPopup if nil
@@ -267,15 +269,21 @@ local misc_group = {
     },
     {
       key = "x",
+      mode = { "n", "v" },
       action = function()
         local state = require("debugmaster.state")
-        require("dap").repl.execute(vim.fn.getreg('"'))
+        local mode = vim.api.nvim_get_mode().mode
+        local text = vim.fn.getreg('"')
+        if mode == "v" or mode == "V" then
+          text = table.concat(utils.get_visual_selected_text() or {}, "\n")
+        end
+        require("dap").repl.execute(text)
         state.sidepanel:set_active_with_open(state.repl)
         vim.api.nvim_buf_call(state.repl.buf, function()
           vim.cmd("normal G")
         end)
       end,
-      desc = "Execute last yanked or deleted text in the repl"
+      desc = "Execute visual selected or last yanked or deleted text in the repl"
     },
     {
       key = "dm",
