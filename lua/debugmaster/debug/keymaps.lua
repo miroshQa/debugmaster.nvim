@@ -7,7 +7,7 @@ local M = {}
 ---@field desc string?
 ---@field nowait boolean?
 ---@field group string?
----@field mode table | string | nil "n" by default. Like in vim.keymap.set in all other cases
+---@field modes table | nil Table with modes like in vim.keymap.set. {"n"} by default
 
 
 ---@class dm.MappingsGroup
@@ -269,13 +269,9 @@ local misc_group = {
     },
     {
       key = "x",
-      mode = { "n", "v" },
+      modes = { "n", "v" },
       action = function()
         local state = require("debugmaster.state")
-        local dmode = require("debugmaster.debug.mode")
-        if not dmode.is_active() then
-          return vim.cmd('normal! gvd')
-        end
         local mode = vim.api.nvim_get_mode().mode
         local text = vim.fn.getreg('"')
         if mode == "v" or mode == "V" then

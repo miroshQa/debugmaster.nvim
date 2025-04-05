@@ -1,5 +1,3 @@
-local config = require("debugmaster.config")
-
 ---@class dm.debug.mode
 local M = {}
 
@@ -13,28 +11,37 @@ local groups = require("debugmaster.debug.keymaps").groups
 ---@field desc string?
 ---@field silent boolean?
 
----@type table<string, dm.OrignalKeymap>
+---@type table<string, table<string, dm.OrignalKeymap>> [mode: {key: OriginalKeymap}, ...]
 local originals = {}
 
 local function save_original_settings()
-  local all = vim.api.nvim_get_keymap("n")
+  local all = {
+    n = vim.api.nvim_get_keymap("n"),
+    v = vim.api.nvim_get_keymap("v"),
+  }
   local lhs_to_map = {}
 
-  for _, mapping in ipairs(all) do
-    lhs_to_map[mapping.lhs] = mapping
+  for mode, mappings in pairs(all) do
+    lhs_to_map[mode] = {}
+    for _, mapping in ipairs(mappings) do
+      lhs_to_map[mode][mapping.lhs] = mapping
+    end
   end
 
   for _, group in ipairs(groups) do
     for _, mapping in ipairs(group.mappings) do
-      local mode = mapping.mode or "n"
-      local key = mapping.key
-      originals[key] = {}
-      local orig = lhs_to_map[key]
-      if orig then
-        originals[key].callback = orig.callback
-        originals[key].rhs = orig.rhs
-        originals[key].desc = orig.desc
-        originals[key].silent = orig.silent
+      for _, mode in ipairs(mapping.modes or { "n" }) do
+        local key = mapping.key
+        if not originals[mode] then
+          originals[mode] = {}
+        end
+        local orig = lhs_to_map[mode][key] or {}
+        originals[mode][key] = {
+          callback = orig.callback,
+          rhs = orig.rhs,
+          desc = orig.desc,
+          silent = orig.silent,
+        }
       end
     end
   end
@@ -49,8 +56,9 @@ function M.enable()
   for _, group in ipairs(groups) do
     for _, mapping in ipairs(group.mappings) do
       local action = mapping.action
-      local mode = mapping.mode or "n"
-      vim.keymap.set(mode, mapping.key, action, { nowait = mapping.nowait })
+      for _, mode in ipairs(mapping.modes or { "n" }) do
+        vim.keymap.set(mode, mapping.key, action, { nowait = mapping.nowait })
+      end
     end
   end
   vim.api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = true } })
@@ -64,13 +72,14 @@ function M.disable()
   for _, group in ipairs(groups) do
     for _, mapping in ipairs(group.mappings) do
       local key = mapping.key
-      local orig = originals[key]
-      local rhs = orig.callback or orig.rhs or key
-      local mode = mapping.mode or "n"
-      vim.keymap.set("n", key, rhs, {
-        desc = orig.desc,
-        silent = orig.silent,
-      })
+      for _, mode in ipairs(mapping.modes or { "n" }) do
+        local orig = originals[mode][key]
+        local rhs = orig.callback or orig.rhs or key
+        vim.keymap.set(mode, key, rhs, {
+          desc = orig.desc,
+          silent = orig.silent,
+        })
+      end
     end
   end
   vim.api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = false } })
