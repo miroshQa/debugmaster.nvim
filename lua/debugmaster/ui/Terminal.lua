@@ -14,7 +14,10 @@ function Terminal.new()
   self.buf = self._dummy_buf
   local lines = {
     "Debug adapter didn't provide terminal",
+    "Either no session is active",
     "Eiter you attached to the process",
+    "And then you can move the neovim terminal with the program",
+    "to this section using 'dm' keymap in the debug mode",
     "Either you need to tweak your adapter configugration options",
     "And probably, the program output is being redirected to the REPL right now.",
     "- Consult with your debug adapter documentation",

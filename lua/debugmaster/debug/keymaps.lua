@@ -52,8 +52,8 @@ local move_debugger_group = {
 }
 
 ---@type dm.MappingsGroup
-local ui_group = {
-  name = "DEBUG UI INTERACTION",
+local sidepanel = {
+  name = "MAGIC SIDEPANEL INTERACTION",
   hlgroup = "STRING",
   mappings = {
     {
@@ -120,6 +120,14 @@ local ui_group = {
       end,
       desc = "Rotate sidenapel anticlockwise",
     },
+  }
+}
+
+---@type dm.MappingsGroup
+local float_widgets = {
+  name = "FLOAT WIDGETS",
+  hlgroup = "STATEMENT",
+  mappings = {
     {
       key = "df",
       action = function()
@@ -127,7 +135,7 @@ local ui_group = {
         pcall(widgets.cursor_float, widgets.frames)
         utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
       end,
-      desc = "frames float"
+      desc = "Frames widget"
     },
     {
       key = "dt",
@@ -136,7 +144,7 @@ local ui_group = {
         pcall(widgets.cursor_float, widgets.threads)
         utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
       end,
-      desc = "threads float"
+      desc = "Threads widget"
     },
     {
       key = "ds",
@@ -153,7 +161,7 @@ local ui_group = {
           require("dap").focus_frame()
         end), { expr = true, buffer = sessions.buf })
       end,
-      desc = "debug sessions",
+      desc = "Debug sessions widget",
     },
     {
       key = "db",
@@ -163,7 +171,7 @@ local ui_group = {
         utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
         vim.bo[state.breakpoints.buf].filetype = "dap-float"
       end,
-      desc = "Float breakpoints"
+      desc = "Breakpoints widget"
     },
     {
       key = "di",
@@ -171,7 +179,7 @@ local ui_group = {
         pcall(require('dap.ui.widgets').hover)
         utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
       end,
-      desc = "Inspect variable under cursor",
+      desc = "Inspect variable under cursor widget",
     },
   }
 }
@@ -269,7 +277,6 @@ local misc_group = {
     },
     {
       key = "x",
-      modes = { "n", "v" },
       action = function()
         local state = require("debugmaster.state")
         local mode = vim.api.nvim_get_mode().mode
@@ -283,7 +290,7 @@ local misc_group = {
           vim.cmd("normal G")
         end)
       end,
-      desc = "Execute visual selected or last yanked or deleted text in the repl",
+      desc = "Execute last yanked or deleted text in the repl",
     },
     {
       key = "dm",
@@ -309,28 +316,13 @@ local misc_group = {
   }
 }
 
----@type dm.MappingsGroup
-local nodesc_group = {
-  mappings = {
-    -- Debug mode is constant, we don't want to accidentally edit buffer
-    {
-      key = "J",
-      action = function() end
-    },
-    {
-      key = "p",
-      action = function() end
-    },
-  }
-}
-
 ---@type dm.MappingsGroup[]
 M.groups = {
   move_debugger_group,
   breakpoings_group,
-  ui_group,
+  sidepanel,
+  float_widgets,
   misc_group,
-  nodesc_group,
 }
 
 ---Give the reference to the key entry so you can remap it to something else
