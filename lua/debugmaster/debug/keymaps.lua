@@ -272,6 +272,10 @@ local misc_group = {
       mode = { "n", "v" },
       action = function()
         local state = require("debugmaster.state")
+        local dmode = require("debugmaster.debug.mode")
+        if not dmode.is_active() then
+          return vim.cmd('normal! gvd')
+        end
         local mode = vim.api.nvim_get_mode().mode
         local text = vim.fn.getreg('"')
         if mode == "v" or mode == "V" then
@@ -283,7 +287,7 @@ local misc_group = {
           vim.cmd("normal G")
         end)
       end,
-      desc = "Execute visual selected or last yanked or deleted text in the repl"
+      desc = "Execute visual selected or last yanked or deleted text in the repl",
     },
     {
       key = "dm",
