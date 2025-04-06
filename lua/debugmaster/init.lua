@@ -1,6 +1,7 @@
 local M = {}
 local keymaps = require("debugmaster.debug.keymaps")
 local dap = require("dap")
+local events_id = "debugmaster"
 
 M.mode = {
   toggle = function()
@@ -18,22 +19,27 @@ M.keys = {
 
 vim.api.nvim_command 'autocmd FileType dap-float nnoremap <buffer><silent> q <cmd>close!<CR>'
 
-dap.listeners.before.launch["dm-autoopen"] = function()
+dap.listeners.before.launch[events_id] = function()
   require("debugmaster.state").sidepanel:open()
 end
 
-dap.listeners.before.attach["dm-autoopen"] = function()
+dap.listeners.before.attach[events_id]= function()
   require("debugmaster.state").sidepanel:open()
 end
 
-dap.listeners.before.event_terminated["dm-autoclose"] = function()
+dap.listeners.before.event_terminated[events_id] = function()
   require("debugmaster.state").sidepanel:close()
   print("dap terminated")
 end
 
-dap.listeners.before.event_exited["dm-autoclose"] = function()
+dap.listeners.before.event_exited[events_id] = function()
   require("debugmaster.state").sidepanel:close()
   print("dap exited")
+end
+
+dap.listeners.before.disconnect[events_id] = function()
+  require("debugmaster.state").sidepanel:close()
+  print("dap disconnected")
 end
 
 
