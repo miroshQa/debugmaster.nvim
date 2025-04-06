@@ -80,7 +80,7 @@ function Sidepanel:open(opts)
   --  it saves us if we try open it in a float window
   local ok, res = pcall(vim.api.nvim_open_win, self.active.buf, enter, cfg)
   if not ok then
-    print("can't open window", res)
+    print("Can't open window.", res)
     return
   end
 

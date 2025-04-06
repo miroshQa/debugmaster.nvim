@@ -37,7 +37,7 @@ end
 function BreakpointNode:get_repr()
   if not self.bpoints and not self.bpoint then
     local help = {
-      { { "t - remove breakpoint or all breakpoints in file", "Comment" } },
+      { { "t - remove breakpoint or all breakpoints in the file", "Comment" } },
       { { "c - change breakpoint condition", "Comment" } }
     }
     return { { "Breakpoints", "Exception" } }, help

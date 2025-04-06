@@ -80,11 +80,11 @@ function M.get_windows_for_buffer(buf)
   return windows
 end
 
-function M.open_floating_window(bufnr)
-  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  local max_width = 1
+function M.open_floating_window(buf, opts)
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local width = 1
   for _, line in ipairs(lines) do
-    max_width = math.max(max_width, vim.fn.strdisplaywidth(line))
+    width = math.max(width, vim.fn.strdisplaywidth(line), opts.min_width or 1)
   end
   local height = math.max(#lines, 1)
 
@@ -93,61 +93,16 @@ function M.open_floating_window(bufnr)
     row = 0,
     col = 0,
     relative = 'cursor',
-    width = max_width,
-    height = height + 3,
+    width = width,
+    height = height + (opts.additional_height or 0),
     style = 'minimal',
     border = "rounded",
     focusable = true
   }
 
   -- Create and configure window
-  local win = vim.api.nvim_open_win(bufnr, true, win_config)
+  local win = vim.api.nvim_open_win(buf, true, win_config)
   return win
-end
-
--- It is a total shame neovim doesn't have more convenient api to do this...
--- Those moments got me thinking that helix has a good chance to suceed honestly
--- https://www.reddit.com/r/neovim/comments/1b1sv3a/function_to_get_visually_selected_text/
---- @return string[]|nil lines The selected text as an array of lines.
-function M.get_visual_selected_text()
-  local _, srow, scol = unpack(vim.fn.getpos('v'))
-  local _, erow, ecol = unpack(vim.fn.getpos('.'))
-
-  -- visual line mode
-  if vim.fn.mode() == 'V' then
-    if srow > erow then
-      return vim.api.nvim_buf_get_lines(0, erow - 1, srow, true)
-    else
-      return vim.api.nvim_buf_get_lines(0, srow - 1, erow, true)
-    end
-  end
-
-  -- regular visual mode
-  if vim.fn.mode() == 'v' then
-    if srow < erow or (srow == erow and scol <= ecol) then
-      return vim.api.nvim_buf_get_text(0, srow - 1, scol - 1, erow - 1, ecol, {})
-    else
-      return vim.api.nvim_buf_get_text(0, erow - 1, ecol - 1, srow - 1, scol, {})
-    end
-  end
-
-  -- visual block mode
-  if vim.fn.mode() == '\22' then
-    local lines = {}
-    if srow > erow then
-      srow, erow = erow, srow
-    end
-    if scol > ecol then
-      scol, ecol = ecol, scol
-    end
-    for i = srow, erow do
-      table.insert(
-        lines,
-        vim.api.nvim_buf_get_text(0, i - 1, math.min(scol - 1, ecol), i - 1, math.max(scol - 1, ecol), {})[1]
-      )
-    end
-    return lines
-  end
 end
 
 return M

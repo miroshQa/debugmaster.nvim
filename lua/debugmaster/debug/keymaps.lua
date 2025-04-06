@@ -167,7 +167,10 @@ local float_widgets = {
       key = "db",
       action = function()
         local state = require("debugmaster.state")
-        utils.open_floating_window(state.breakpoints.buf)
+        utils.open_floating_window(state.breakpoints.buf, {
+          min_width = 60,
+          additional_height = 3,
+        })
         utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
         vim.bo[state.breakpoints.buf].filetype = "dap-float"
       end,
@@ -279,11 +282,7 @@ local misc_group = {
       key = "x",
       action = function()
         local state = require("debugmaster.state")
-        local mode = vim.api.nvim_get_mode().mode
         local text = vim.fn.getreg('"')
-        if mode == "v" or mode == "V" then
-          text = table.concat(utils.get_visual_selected_text() or {}, "\n")
-        end
         require("dap").repl.execute("\n" .. text)
         state.sidepanel:set_active_with_open(state.repl)
         vim.api.nvim_buf_call(state.repl.buf, function()
