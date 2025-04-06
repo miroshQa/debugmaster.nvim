@@ -292,6 +292,19 @@ local misc_group = {
       desc = "Execute last yanked or deleted text in the repl",
     },
     {
+      key = "X",
+      action = function()
+        local state = require("debugmaster.state")
+        local text = vim.fn.getreg('"')
+        require("dap").repl.execute("\n" .. text)
+        vim.api.nvim_buf_call(state.repl.buf, function()
+          vim.cmd("normal G")
+        end)
+      end,
+      desc = "Same as `x` but without switching to the repl",
+      -- that is useful if you debug neovim inside neovim :)
+    },
+    {
       key = "dm",
       action = function()
         local state = require("debugmaster.state")
