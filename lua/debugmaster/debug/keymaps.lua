@@ -338,4 +338,10 @@ function M.get(key)
   error("Key doesn't exist")
 end
 
+--- Add new user mapping to the MISCELANOUS group
+---@param mapping dm.KeySpec
+function M.add(mapping)
+  table.insert(misc_group.mappings, mapping)
+end
+
 return M

@@ -13,6 +13,7 @@ M.mode = {
 
 M.keys = {
   get = keymaps.get,
+  add = keymaps.add
 }
 
 vim.api.nvim_command 'autocmd FileType dap-float nnoremap <buffer><silent> q <cmd>close!<CR>'
