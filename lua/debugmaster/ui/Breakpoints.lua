@@ -94,10 +94,16 @@ function Breakpoints.new()
       if node.bpoint then
         local bp = node.bpoint
         breakpoints.remove(bp.buf, bp.line)
+        for _, session in pairs(dap.sessions()) do
+          session:set_breakpoints(breakpoints.get(bp.buf))
+        end
       elseif node.bpoints then
-        local bps = node.bpoints
+        local bps = node.bpoints or {}
         for _, bp in pairs(bps.bpoints) do
           breakpoints.remove(bps.buf, bp.line)
+          for _, session in pairs(dap.sessions()) do
+            session:set_breakpoints(breakpoints.get(bp.buf))
+          end
         end
       end
       self._tree:render()
