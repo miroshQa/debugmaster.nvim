@@ -75,6 +75,7 @@ function Sidepanel:open(opts)
     enter = true
   else
     cfg.split = direction
+    cfg.win = -1
   end
 
   --  it saves us if we try open it in a float window
