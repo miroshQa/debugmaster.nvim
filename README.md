@@ -14,7 +14,6 @@ It builds on the dap-view concept, reimagining how debugging interfaces should l
 ## Features
 - Dedicated debug mode
 - Anti GUI debugger interface with tight debug mode integration
-- Multiple sessions support
 
 ## Quickstart
 Using lazy.nvim plugin manager:

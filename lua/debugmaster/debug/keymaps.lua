@@ -235,16 +235,9 @@ local misc_group = {
   mappings = {
     {
       key = "dr",
-      desc = "Rerun last session with cached config",
+      desc = "Rerun the last session with the cached configuration, or start a new one if none is active",
       action = function()
         require("debugmaster.plugins.smart_rerun").run_last_cached()
-      end
-    },
-    {
-      key = "dR",
-      desc = "Rerun last session with new params",
-      action = function()
-        require("dap").run_last()
       end
     },
     {
