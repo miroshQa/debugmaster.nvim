@@ -14,6 +14,7 @@ function Sidepanel.new()
   self.win = -1 -- always need to check if valid before doing something
   self.direction = "right"
   self.float = false
+  self.size = 50 -- size for the split. not applied to float. always in the range [10;90]
 
   ---@type dm.ui.Sidepanel.IComponent[]
   self.components = {}
@@ -76,6 +77,8 @@ function Sidepanel:open(opts)
   else
     cfg.split = direction
     cfg.win = -1
+    cfg.width = math.floor(vim.o.columns  * (self.size / 100))
+    cfg.height = math.floor(vim.o.lines  * (self.size / 100))
   end
 
   --  it saves us if we try open it in a float window
@@ -159,6 +162,19 @@ function Sidepanel:rotate(step)
   if was_focused then
     vim.api.nvim_set_current_win(self.win)
   end
+end
+
+function math.clamp(n, low, high)
+  return math.min(math.max(n, low), high)
+end
+
+function Sidepanel:resize(step)
+  if self.float or not self:is_open() then
+    return
+  end
+  self.size = math.clamp(self.size + step, 10, 90)
+  self:close()
+  self:open()
 end
 
 function Sidepanel:toggle_layout()

@@ -53,7 +53,7 @@ local move_debugger_group = {
 
 ---@type dm.MappingsGroup
 local sidepanel = {
-  name = "MAGIC SIDEPANEL INTERACTION",
+  name = "SIDEPANEL",
   hlgroup = "STRING",
   mappings = {
     {
@@ -120,6 +120,22 @@ local sidepanel = {
       end,
       desc = "Rotate sidenapel anticlockwise",
     },
+    {
+      key = "-",
+      action = function()
+        local state = require("debugmaster.state")
+        state.sidepanel:resize(-10)
+      end,
+      desc = "Decrease sidenapel size",
+    },
+    {
+      key = "+",
+      action = function()
+        local state = require("debugmaster.state")
+        state.sidepanel:resize(10)
+      end,
+      desc = "Increase sidepanel size",
+    }
   }
 }
 
@@ -235,7 +251,7 @@ local misc_group = {
   mappings = {
     {
       key = "dr",
-      desc = "Rerun the last session with the cached configuration, or start a new one if none is active",
+      desc = "Restart the current session or rerun last if none",
       action = function()
         require("debugmaster.plugins.smart_rerun").run_last_cached()
       end
