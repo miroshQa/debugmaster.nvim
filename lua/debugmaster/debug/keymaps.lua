@@ -23,14 +23,14 @@ local move_debugger_group = {
   -- We want to our DEBUG mode be "constant". So we can freely move and can't edit text
   mappings = {
     {
+      key = "L",
+      action = function() require("dap").step_over() end,
+      desc = "Step over (next [L]ine). Works with count (Try to type '5L')",
+    },
+    {
       key = "D",
       action = function() require("dap").step_into() end,
       desc = "Step into (go [D]eeper)",
-    },
-    {
-      key = "L",
-      action = function() require("dap").step_over() end,
-      desc = "Step over (next [L]ine)",
     },
     {
       key = "q",
