@@ -23,14 +23,14 @@ local move_debugger_group = {
   -- We want to our DEBUG mode be "constant". So we can freely move and can't edit text
   mappings = {
     {
-      key = "L",
+      key = "o",
       action = function() require("dap").step_over() end,
-      desc = "Step over (next [L]ine). Works with count (Try to type '5L')",
+      desc = "Step over. Works with count (Try to type '5o')",
     },
     {
-      key = "D",
+      key = "m",
       action = function() require("dap").step_into() end,
-      desc = "Step into (go [D]eeper)",
+      desc = "Step into (mine deeper)",
     },
     {
       key = "q",
@@ -264,13 +264,13 @@ local misc_group = {
       desc = "Debug start new sessions",
     },
     {
-      key = "Q",
+      key = "dq",
       action = function()
         require("dap").terminate()
         local state = require("debugmaster.state")
         state.sidepanel:close()
       end,
-      desc = "Quit debug (terminate debug)"
+      desc = "Quit debug"
     },
     {
       key = "[s",

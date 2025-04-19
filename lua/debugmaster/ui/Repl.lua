@@ -16,6 +16,7 @@ function Repl.new()
   -- https://github.com/mfussenegger/nvim-dap/issues/786
   vim.keymap.set("i", "<C-w>", "<C-S-w>", {buffer = self.buf})
   vim.keymap.set("n", "<Tab>", "<CR>", {buffer = self.buf, remap = true})
+  vim.keymap.del("n", "o", {buffer = self.buf })
 
   dap.listeners.after.initialize["repl-hl"] = function(session, err, response, args, seq)
     pcall(vim.treesitter.stop, self.buf)

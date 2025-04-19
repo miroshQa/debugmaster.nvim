@@ -66,6 +66,7 @@ body:
         vim.opt.rtp:prepend(lazypath)
 
 
+        vim.g.mapleader = " "
         require("lazy").setup({
           spec = {
             {
@@ -81,8 +82,8 @@ body:
                 "miroshQa/debugmaster.nvim",
                 config = function()
                   local dm = require("debugmaster")
-                  vim.keymap.set({ "n", "t" }, "<leader>d", dm.mode.toggle, { nowait = true })
-                  vim.keymap.set("t", "<Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
+                  vim.keymap.set({ "n", "v" }, "<leader>d", dm.mode.toggle, { nowait = true })
+                  vim.keymap.set("t", "<C-/>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
 
                   -- Example keymap modification:
                   dm.keys.get("q").key = "O"

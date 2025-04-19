@@ -12,6 +12,7 @@ function Scopes.new()
   self.buf = scopes_buf
   self.name = "[S]copes"
   vim.keymap.set("n", "<Tab>", "<CR>", {buffer = self.buf, remap = true})
+  vim.keymap.del("n", "o", {buffer = self.buf })
 
   vim.api.nvim_create_autocmd("User", {
     pattern = "DapSessionChanged",
