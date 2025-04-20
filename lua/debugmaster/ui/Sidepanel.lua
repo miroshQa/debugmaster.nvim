@@ -31,6 +31,15 @@ function Sidepanel.new()
     end)
   })
 
+  vim.api.nvim_create_autocmd("VimResized", {
+    callback = function(args)
+      if self:is_open() then
+        self:close()
+        self:open()
+      end
+    end
+  })
+
   return self
 end
 
