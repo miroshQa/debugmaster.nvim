@@ -16,9 +16,7 @@ function Scopes.new()
   vim.keymap.set("n", "<Tab>", "<CR>", {buffer = self.buf, remap = true})
   vim.keymap.del("n", "o", {buffer = self.buf })
 
-  -- https://github.com/mfussenegger/nvim-dap/issues/1491
-  local refresher = utils.debounce(scopes.refresh, 50)
-  dap.listeners.after.variables["debugmaster"] = refresher
+  vim.keymap.set("n", "r", scopes.refresh, {buffer = self.buf})
 
   vim.api.nvim_create_autocmd("User", {
     pattern = "DapSessionChanged",
