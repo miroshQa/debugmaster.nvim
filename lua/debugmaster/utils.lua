@@ -105,4 +105,15 @@ function M.open_floating_window(buf, opts)
   return win
 end
 
+function M.debounce(fn, ms)
+  local timer = assert(vim.uv.new_timer())
+  return function(...)
+    local args = { ... }
+    timer:stop()
+    timer:start(ms, 0, vim.schedule_wrap(function()
+      fn(unpack(args))
+    end))
+  end
+end
+
 return M
