@@ -4,7 +4,11 @@ local M = {}
 M.cursor_hl = (function()
   local plugin = {}
   plugin.activate = function()
-    vim.api.nvim_set_hl(0, "dCursor", { bg = "#2da84f" })
+    local dcursor = vim.api.nvim_get_hl(0, { name = "dCursor" })
+    -- https://stackoverflow.com/questions/1252539/most-efficient-way-to-determine-if-a-lua-table-is-empty-contains-no-entries
+    if next(dcursor) == nil then
+      vim.api.nvim_set_hl(0, "dCursor", { bg = "#2da84f" })
+    end
     local cursor_mode_off = "n-v-sm:block,i-t-ci-ve-c:ver25,r-cr-o:hor20"
     local cursor_mode_on = "n-v-sm:block-dCursor,i-ci-ve-c:ver25-dCursor,t:ver25,r-cr-o:hor20"
 
