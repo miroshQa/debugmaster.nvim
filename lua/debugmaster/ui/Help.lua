@@ -1,4 +1,3 @@
-local utils = require("debugmaster.utils")
 local api = vim.api
 
 ---@class dm.ui.Help: dm.ui.Sidepanel.IComponent

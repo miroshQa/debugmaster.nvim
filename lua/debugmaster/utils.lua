@@ -57,7 +57,7 @@ end
 function M.register_to_close_on_leave(win)
   local id
   id = api.nvim_create_autocmd("WinLeave", {
-    callback = function(args)
+    callback = function()
       if api.nvim_win_is_valid(win) then
         api.nvim_win_close(win, true)
       end

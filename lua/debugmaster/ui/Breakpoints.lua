@@ -126,7 +126,7 @@ function Breakpoints.new()
     end
   end)
 
-  dap.listeners.after.setBreakpoints["debugmaster"] = function(session)
+  dap.listeners.after.setBreakpoints["debugmaster"] = function()
     self._tree:render()
   end
 

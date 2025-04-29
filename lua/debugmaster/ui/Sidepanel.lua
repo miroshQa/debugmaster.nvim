@@ -24,7 +24,7 @@ function Sidepanel.new()
 
   api.nvim_create_autocmd("User", {
     pattern = "WidgetBufferNumberChanged",
-    callback = vim.schedule_wrap(function(args)
+    callback = vim.schedule_wrap(function()
       if self.active and self:is_open() then
         api.nvim_win_set_buf(self.win, self.active.buf)
         self:_cook_winbar()
@@ -33,7 +33,7 @@ function Sidepanel.new()
   })
 
   api.nvim_create_autocmd("VimResized", {
-    callback = function(args)
+    callback = function()
       if self:is_open() then
         self:close()
         self:open()

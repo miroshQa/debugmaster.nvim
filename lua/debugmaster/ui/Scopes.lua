@@ -1,6 +1,4 @@
 local widgets = require('dap.ui.widgets')
-local dap = require("dap")
-local utils = require("debugmaster.utils")
 local api = vim.api
 
 ---@class dm.ui.Scopes: dm.ui.Sidepanel.IComponent

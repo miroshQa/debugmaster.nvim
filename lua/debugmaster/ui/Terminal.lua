@@ -30,7 +30,7 @@ function Terminal.new()
   api.nvim_set_option_value("modifiable", false, { buf = self.buf })
 
 
-  dap.defaults.fallback.terminal_win_cmd = function(cfg)
+  dap.defaults.fallback.terminal_win_cmd = function()
     local term_buf = api.nvim_create_buf(false, false)
     self:attach_terminal_to_current_session(term_buf)
     return term_buf, nil

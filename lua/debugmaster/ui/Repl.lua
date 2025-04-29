@@ -1,4 +1,3 @@
-local utils = require("debugmaster.utils")
 local repl = require 'dap.repl'
 local dap = require("dap")
 local api = vim.api
@@ -19,7 +18,7 @@ function Repl.new()
   vim.keymap.set("n", "<Tab>", "<CR>", {buffer = self.buf, remap = true})
   vim.keymap.del("n", "o", {buffer = self.buf })
 
-  dap.listeners.after.initialize["repl-hl"] = function(session, err, response, args, seq)
+  dap.listeners.after.initialize["repl-hl"] = function()
     pcall(vim.treesitter.stop, self.buf)
     pcall(vim.treesitter.start, self.buf, vim.o.filetype)
   end
