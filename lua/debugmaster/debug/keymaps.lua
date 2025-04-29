@@ -1,4 +1,5 @@
 local utils = require("debugmaster.utils")
+local api = vim.api
 local M = {}
 
 ---@class dm.KeySpec
@@ -149,7 +150,7 @@ local float_widgets = {
       action = function()
         local widgets = require("dap.ui.widgets")
         pcall(widgets.cursor_float, widgets.frames)
-        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
+        utils.register_to_close_on_leave(api.nvim_get_current_win())
       end,
       desc = "Frames widget"
     },
@@ -158,7 +159,7 @@ local float_widgets = {
       action = function()
         local widgets = require("dap.ui.widgets")
         pcall(widgets.cursor_float, widgets.threads)
-        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
+        utils.register_to_close_on_leave(api.nvim_get_current_win())
       end,
       desc = "Threads widget"
     },
@@ -170,10 +171,10 @@ local float_widgets = {
         if not ok then
           return
         end
-        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
+        utils.register_to_close_on_leave(api.nvim_get_current_win())
         vim.keymap.set("n", "<CR>", vim.schedule_wrap(function()
           require('dap.ui').trigger_actions({ mode = 'first' })
-          vim.api.nvim_exec_autocmds("User", { pattern = "DapSessionChanged" })
+          api.nvim_exec_autocmds("User", { pattern = "DapSessionChanged" })
           require("dap").focus_frame()
         end), { expr = true, buffer = sessions.buf })
       end,
@@ -187,7 +188,7 @@ local float_widgets = {
           min_width = 60,
           additional_height = 3,
         })
-        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
+        utils.register_to_close_on_leave(api.nvim_get_current_win())
         vim.bo[state.breakpoints.buf].filetype = "dap-float"
       end,
       desc = "Breakpoints widget"
@@ -196,7 +197,7 @@ local float_widgets = {
       key = "di",
       action = function()
         pcall(require('dap.ui.widgets').hover)
-        utils.register_to_close_on_leave(vim.api.nvim_get_current_win())
+        utils.register_to_close_on_leave(api.nvim_get_current_win())
       end,
       desc = "Inspect variable under cursor widget",
     },
@@ -294,7 +295,7 @@ local misc_group = {
         local text = vim.fn.getreg('"')
         require("dap").repl.execute("\n" .. text)
         state.sidepanel:set_active_with_open(state.repl)
-        vim.api.nvim_buf_call(state.repl.buf, function()
+        api.nvim_buf_call(state.repl.buf, function()
           vim.cmd("normal G")
         end)
       end,
@@ -306,7 +307,7 @@ local misc_group = {
         local state = require("debugmaster.state")
         local text = vim.fn.getreg('"')
         require("dap").repl.execute("\n" .. text)
-        vim.api.nvim_buf_call(state.repl.buf, function()
+        api.nvim_buf_call(state.repl.buf, function()
           vim.cmd("normal G")
         end)
       end,
@@ -318,15 +319,15 @@ local misc_group = {
       action = function()
         local state = require("debugmaster.state")
         local terminal = state.terminal
-        local buf = vim.api.nvim_get_current_buf()
-        local is_term = vim.api.nvim_get_option_value('buftype', { buf = buf }) == 'terminal'
+        local buf = api.nvim_get_current_buf()
+        local is_term = api.nvim_get_option_value('buftype', { buf = buf }) == 'terminal'
         if not is_term then
           return print("Current buffer isn't terminal. Can't move to the Terminal section")
         end
         local ok = terminal:attach_terminal_to_current_session(buf)
         if ok then
           for _, win in ipairs(utils.get_windows_for_buffer(buf)) do
-            vim.api.nvim_win_close(win, true)
+            api.nvim_win_close(win, true)
           end
           state.sidepanel:open()
           state.sidepanel:set_active(terminal)

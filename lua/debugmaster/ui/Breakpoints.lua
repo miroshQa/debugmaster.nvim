@@ -1,6 +1,7 @@
 local dap = require("dap")
 local breakpoints = require("dap.breakpoints")
 local Tree = require("debugmaster.ui.Tree")
+local api = vim.api
 
 ---@class dm.BreakpointNode: dm.NodeTrait
 local BreakpointNode = {}
@@ -42,14 +43,14 @@ function BreakpointNode:get_repr()
     }
     return { { "Breakpoints", "Exception" } }, help
   elseif self.bpoints then
-    local path = vim.api.nvim_buf_get_name(self.bpoints.buf)
+    local path = api.nvim_buf_get_name(self.bpoints.buf)
     path = vim.fn.fnamemodify(path, ":.")
     return { { path, "Statement" } }
   else
     local vlines = nil
     local indent = "    "
     local linenr = self.bpoint.line
-    local line = vim.trim(vim.api.nvim_buf_get_lines(self.bpoint.buf, linenr - 1, linenr, false)[1])
+    local line = vim.trim(api.nvim_buf_get_lines(self.bpoint.buf, linenr - 1, linenr, false)[1])
     local text = string.format("%s %s %s", indent, linenr, line)
     local condition = self.bpoint.condition
     if condition and condition ~= "" then
@@ -74,7 +75,7 @@ function Breakpoints.new()
   self.buf = self._tree.buf
 
   vim.keymap.set("n", "c", function()
-    local line = vim.api.nvim_win_get_cursor(0)[1] - 1
+    local line = api.nvim_win_get_cursor(0)[1] - 1
     ---@type dm.BreakpointNode?
     local node = self._tree:node_by_line(line)
     if node and node.bpoint then
@@ -87,7 +88,7 @@ function Breakpoints.new()
 
 
   vim.keymap.set("n", "t", function()
-    local line = vim.api.nvim_win_get_cursor(0)[1] - 1
+    local line = api.nvim_win_get_cursor(0)[1] - 1
     ---@type dm.BreakpointNode?
     local node = self._tree:node_by_line(line)
     if node then
@@ -111,7 +112,7 @@ function Breakpoints.new()
   end, { buffer = self.buf, nowait = true })
 
   vim.keymap.set("n", "<CR>", function()
-    local line = vim.api.nvim_win_get_cursor(0)[1] - 1
+    local line = api.nvim_win_get_cursor(0)[1] - 1
     ---@type dm.BreakpointNode?
     local node = self._tree:node_by_line(line)
     if node then

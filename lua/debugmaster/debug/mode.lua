@@ -4,6 +4,7 @@ local M = {}
 
 local active = false
 local groups = require("debugmaster.debug.keymaps").groups
+local api = vim.api
 
 ---@class dm.OrignalKeymap
 ---@field callback function?
@@ -16,8 +17,8 @@ local originals = {}
 
 local function save_original_settings()
   local all = {
-    n = vim.api.nvim_get_keymap("n"),
-    v = vim.api.nvim_get_keymap("v"),
+    n = api.nvim_get_keymap("n"),
+    v = api.nvim_get_keymap("v"),
   }
   local lhs_to_map = {}
 
@@ -61,7 +62,7 @@ function M.enable()
       end
     end
   end
-  vim.api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = true } })
+  api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = true } })
 end
 
 function M.disable()
@@ -82,7 +83,7 @@ function M.disable()
       end
     end
   end
-  vim.api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = false } })
+  api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = false } })
 end
 
 function M.toggle()

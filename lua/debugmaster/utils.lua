@@ -1,3 +1,5 @@
+local api = vim.api
+
 local M = {}
 
 -- https://github.com/mfussenegger/nvim-dap/issues/792
@@ -16,8 +18,8 @@ function M.gotoBreakpoint(dir)
   end
 
   local current = {
-    bufnr = vim.api.nvim_get_current_buf(),
-    line = vim.api.nvim_win_get_cursor(0)[1],
+    bufnr = api.nvim_get_current_buf(),
+    line = api.nvim_win_get_cursor(0)[1],
   }
 
   local nextPoint
@@ -54,12 +56,12 @@ end
 ---@param win number
 function M.register_to_close_on_leave(win)
   local id
-  id = vim.api.nvim_create_autocmd("WinLeave", {
+  id = api.nvim_create_autocmd("WinLeave", {
     callback = function(args)
-      if vim.api.nvim_win_is_valid(win) then
-        vim.api.nvim_win_close(win, true)
+      if api.nvim_win_is_valid(win) then
+        api.nvim_win_close(win, true)
       end
-      vim.api.nvim_del_autocmd(id)
+      api.nvim_del_autocmd(id)
     end
   })
 end
@@ -72,8 +74,8 @@ end
 
 function M.get_windows_for_buffer(buf)
   local windows = {}
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.api.nvim_win_get_buf(win) == buf then
+  for _, win in ipairs(api.nvim_list_wins()) do
+    if api.nvim_win_get_buf(win) == buf then
       table.insert(windows, win)
     end
   end
@@ -81,7 +83,7 @@ function M.get_windows_for_buffer(buf)
 end
 
 function M.open_floating_window(buf, opts)
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
   local width = 1
   for _, line in ipairs(lines) do
     width = math.max(width, vim.fn.strdisplaywidth(line), opts.min_width or 1)
@@ -101,7 +103,7 @@ function M.open_floating_window(buf, opts)
   }
 
   -- Create and configure window
-  local win = vim.api.nvim_open_win(buf, true, win_config)
+  local win = api.nvim_open_win(buf, true, win_config)
   return win
 end
 

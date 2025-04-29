@@ -1,4 +1,5 @@
 local utils = require("debugmaster.utils")
+local api = vim.api
 
 ---@class dm.ui.Help: dm.ui.Sidepanel.IComponent
 local Help = {}
@@ -7,8 +8,8 @@ local Help = {}
 function Help.new(groups)
   ---@class dm.ui.Help
   local self = setmetatable({}, { __index = Help })
-  self.buf = vim.api.nvim_create_buf(false, true)
-  self._hl_ns = vim.api.nvim_create_namespace("HelpPopupHighlightNamespace")
+  self.buf = api.nvim_create_buf(false, true)
+  self._hl_ns = api.nvim_create_namespace("HelpPopupHighlightNamespace")
   self.win = nil
   self.name = "[H]elp"
   local lines = {}
@@ -31,11 +32,11 @@ function Help.new(groups)
   end
 
   table.remove(lines)
-  vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
+  api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
   for _, hl in ipairs(highlights) do
-    vim.api.nvim_buf_add_highlight(self.buf, self._hl_ns, hl.hlgroup, hl.index, 0, -1)
+    api.nvim_buf_add_highlight(self.buf, self._hl_ns, hl.hlgroup, hl.index, 0, -1)
   end
-  vim.api.nvim_set_option_value("modifiable", false, { buf = self.buf })
+  api.nvim_set_option_value("modifiable", false, { buf = self.buf })
   return self
 end
 

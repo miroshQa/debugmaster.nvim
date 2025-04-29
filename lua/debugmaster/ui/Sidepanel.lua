@@ -1,4 +1,5 @@
 local utils = require("debugmaster.utils")
+local api = vim.api
 
 ---@class dm.ui.Sidepanel.IComponent
 ---@field name string
@@ -21,17 +22,17 @@ function Sidepanel.new()
   ---@type dm.ui.Sidepanel.IComponent
   self.active = nil
 
-  vim.api.nvim_create_autocmd("User", {
+  api.nvim_create_autocmd("User", {
     pattern = "WidgetBufferNumberChanged",
     callback = vim.schedule_wrap(function(args)
       if self.active and self:is_open() then
-        vim.api.nvim_win_set_buf(self.win, self.active.buf)
+        api.nvim_win_set_buf(self.win, self.active.buf)
         self:_cook_winbar()
       end
     end)
   })
 
-  vim.api.nvim_create_autocmd("VimResized", {
+  api.nvim_create_autocmd("VimResized", {
     callback = function(args)
       if self:is_open() then
         self:close()
@@ -44,11 +45,11 @@ function Sidepanel.new()
 end
 
 function Sidepanel:is_open()
-  return vim.api.nvim_win_is_valid(self.win)
+  return api.nvim_win_is_valid(self.win)
 end
 
 function Sidepanel:is_focused()
-  return vim.api.nvim_get_current_win() == self.win
+  return api.nvim_get_current_win() == self.win
 end
 
 function Sidepanel:toggle()
@@ -91,7 +92,7 @@ function Sidepanel:open(opts)
   end
 
   --  it saves us if we try open it in a float window
-  local ok, res = pcall(vim.api.nvim_open_win, self.active.buf, enter, cfg)
+  local ok, res = pcall(api.nvim_open_win, self.active.buf, enter, cfg)
   if not ok then
     print("Can't open window.", res)
     return
@@ -101,8 +102,8 @@ function Sidepanel:open(opts)
   self.win = res
   self.direction = direction
   self.float = float
-  vim.api.nvim_set_option_value("number", false, { win = self.win })
-  vim.api.nvim_set_option_value("relativenumber", false, { win = self.win })
+  api.nvim_set_option_value("number", false, { win = self.win })
+  api.nvim_set_option_value("relativenumber", false, { win = self.win })
   if self.float then
     utils.register_to_close_on_leave(self.win)
   end
@@ -111,7 +112,7 @@ end
 
 function Sidepanel:_cook_winbar()
   -- TODO: redraw on resize
-  local win_width = vim.api.nvim_win_get_width(self.win)
+  local win_width = api.nvim_win_get_width(self.win)
   local join_text_width = 0
   for _, comp in ipairs(self.components) do
     join_text_width = join_text_width + #comp.name
@@ -146,14 +147,14 @@ end
 function Sidepanel:close()
   if self:is_open() then
     -- may fail if trying to close last window
-    pcall(vim.api.nvim_win_close, self.win, true)
+    pcall(api.nvim_win_close, self.win, true)
   end
 end
 
 ---rotate sidebar clockwise
 ---@param step number
 function Sidepanel:rotate(step)
-  if not vim.api.nvim_win_is_valid(self.win) or self.float then
+  if not api.nvim_win_is_valid(self.win) or self.float then
     return
   end
   local was_focused = self:is_focused()
@@ -169,7 +170,7 @@ function Sidepanel:rotate(step)
     end
   end
   if was_focused then
-    vim.api.nvim_set_current_win(self.win)
+    api.nvim_set_current_win(self.win)
   end
 end
 
@@ -198,7 +199,7 @@ end
 function Sidepanel:set_active(comp)
   self.active = comp
   if self:is_open() then
-    vim.api.nvim_win_set_buf(self.win, self.active.buf)
+    api.nvim_win_set_buf(self.win, self.active.buf)
     self:_cook_winbar()
   end
 end

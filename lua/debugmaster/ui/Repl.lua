@@ -1,6 +1,7 @@
 local utils = require("debugmaster.utils")
 local repl = require 'dap.repl'
 local dap = require("dap")
+local api = vim.api
 
 ---@class dm.ui.Repl: dm.ui.Sidepanel.IComponent
 local Repl = {}
@@ -10,7 +11,7 @@ function Repl.new()
   local self = setmetatable({}, {__index = Repl})
 
   local repl_buf, repl_win = repl.open()
-  vim.api.nvim_win_close(repl_win, true)
+  api.nvim_win_close(repl_win, true)
   self.name = "[R]epl"
   self.buf = repl_buf
   -- https://github.com/mfussenegger/nvim-dap/issues/786

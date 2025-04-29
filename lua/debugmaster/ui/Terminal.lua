@@ -1,4 +1,5 @@
 local dap = require("dap")
+local api = vim.api
 
 ---@class dm.ui.Terminal: dm.ui.Sidepanel.IComponent
 local Terminal = {}
@@ -10,7 +11,7 @@ function Terminal.new()
   local self = setmetatable({}, { __index = Terminal })
   self.name = "[T]erminal"
 
-  self._dummy_buf = vim.api.nvim_create_buf(false, true)
+  self._dummy_buf = api.nvim_create_buf(false, true)
   self.buf = self._dummy_buf
   local lines = {
     "Debug adapter didn't provide terminal",
@@ -25,23 +26,23 @@ function Terminal.new()
     'Usually required option is `console = "integratedTerminal"`',
     "- Check nvim dap issues about your debug adapter",
   }
-  vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
-  vim.api.nvim_set_option_value("modifiable", false, { buf = self.buf })
+  api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
+  api.nvim_set_option_value("modifiable", false, { buf = self.buf })
 
 
   dap.defaults.fallback.terminal_win_cmd = function(cfg)
-    local term_buf = vim.api.nvim_create_buf(false, false)
+    local term_buf = api.nvim_create_buf(false, false)
     self:attach_terminal_to_current_session(term_buf)
     return term_buf, nil
   end
 
-  vim.api.nvim_create_autocmd("User", {
+  api.nvim_create_autocmd("User", {
     pattern = "DapSessionChanged",
     callback = vim.schedule_wrap(function()
       local session = assert(dap.session())
       local term = terms_per_session[session.id] or self._dummy_buf
       self.buf = term
-      vim.api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
+      api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
     end),
   })
 
@@ -62,14 +63,14 @@ function Terminal:attach_terminal_to_current_session(buf)
 
   terms_per_session[session.id] = buf
   self.buf = buf
-  vim.api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
+  api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
 
-  vim.api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
+  api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
     callback = function(args)
       if args.buf == self.buf then
         self.buf = self._dummy_buf
         terms_per_session[session.id] = nil
-        vim.api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
+        api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
       end
     end
   })

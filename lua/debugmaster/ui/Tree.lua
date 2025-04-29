@@ -1,3 +1,5 @@
+local api = vim.api
+
 ---@alias dm.HlLine [string, string] First is text, second is highlight group
 ---@alias dm.NodeRepr nil | dm.HlLine[]
 ---@alias dm.ChildrenIter fun(): dm.NodeTrait?
@@ -19,16 +21,16 @@ function Tree.new(buf, root)
   self.root = root
   self._nodes_by_line = {}
   self._nodes_by_id = {}
-  self._ns_id = vim.api.nvim_create_namespace("")
+  self._ns_id = api.nvim_create_namespace("")
   return self
 end
 
 function Tree.new_with_buf(root)
-  return Tree.new(vim.api.nvim_create_buf(false, true), root)
+  return Tree.new(api.nvim_create_buf(false, true), root)
 end
 
 function Tree:render(start)
-  vim.api.nvim_set_option_value("modifiable", true, { buf = self.buf })
+  api.nvim_set_option_value("modifiable", true, { buf = self.buf })
   self._nodes_by_line = {}
   self._nodes_by_id = {}
   local lines = {}
@@ -78,11 +80,11 @@ function Tree:render(start)
 
   render_node(self.root, 0)
 
-  vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
-  vim.api.nvim_buf_clear_namespace(self.buf, self._ns_id, 0, -1)
+  api.nvim_buf_set_lines(self.buf, 0, -1, false, lines)
+  api.nvim_buf_clear_namespace(self.buf, self._ns_id, 0, -1)
 
   for _, h in ipairs(highlights) do
-    vim.api.nvim_buf_add_highlight(
+    api.nvim_buf_add_highlight(
       self.buf,
       self._ns_id,
       h.hl,
@@ -93,7 +95,7 @@ function Tree:render(start)
   end
 
   for _, mark in ipairs(virt_line_marks) do
-    vim.api.nvim_buf_set_extmark(
+    api.nvim_buf_set_extmark(
       self.buf,
       self._ns_id,
       mark.line, -- 0-based line number
@@ -104,7 +106,7 @@ function Tree:render(start)
       }
     )
   end
-  vim.api.nvim_set_option_value("modifiable", false, { buf = self.buf })
+  api.nvim_set_option_value("modifiable", false, { buf = self.buf })
 end
 
 function Tree:node_by_line(linenr)
