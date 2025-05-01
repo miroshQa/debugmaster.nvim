@@ -2,9 +2,9 @@
 
 debugmaster.nvim is dap-ui alternative similar to dap-view that additionally introduces a separate debug mode (like "Insert" or "Normal" mode, but built for debugging) and tightly integrates it with the UI it provides. Simply put, debugmaster.nvim is the lovechild of dap-view and hydra.nvim with polished corners, trying to imagine how a debugging workflow should look in a modal editor.  
 
-![split](https://github.com/user-attachments/assets/96d1f463-d4f8-42ed-809f-bab22d323a66)  
 
-![float](https://github.com/user-attachments/assets/b5876f8b-b3d9-4e87-a6bb-48261a3da33b)  
+https://github.com/user-attachments/assets/7e819823-0691-448f-91fa-8abebecc9327
+
 
 debugmaster.nvim leverages nvim-dap's native widgets and adds its own when needed. The ultimate goal of this plugin is to establish a new debug Neovim mode, making debugging easy and convenient while providing a UI suitable for a modal editor — so you can always stay in the flow, focusing only on important things without any distractions
 
