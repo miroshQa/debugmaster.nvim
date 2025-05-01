@@ -3,7 +3,7 @@
 debugmaster.nvim is dap-ui alternative similar to dap-view that additionally introduces a separate debug mode (like "Insert" or "Normal" mode, but built for debugging) and tightly integrates it with the UI it provides. Simply put, debugmaster.nvim is the lovechild of dap-view and hydra.nvim with polished corners, trying to imagine how a debugging workflow should look in a modal editor.  
 
 
-https://github.com/user-attachments/assets/7e819823-0691-448f-91fa-8abebecc9327
+https://github.com/user-attachments/assets/f49d5033-7a46-408a-980a-060c8093d5bf
 
 
 debugmaster.nvim leverages nvim-dap's native widgets and adds its own when needed. The ultimate goal of this plugin is to establish a new debug Neovim mode, making debugging easy and convenient while providing a UI suitable for a modal editor — so you can always stay in the flow, focusing only on important things without any distractions
@@ -35,9 +35,6 @@ return {
       local dm = require("debugmaster")  
       vim.keymap.set({ "n", "v" }, "<leader>d", dm.mode.toggle, { nowait = true })  
       vim.keymap.set("t", "<C-/>", "<C-\\><C-n>", {desc = "Exit terminal mode"})  
-        
-      -- Example keymap modification:  
-      -- dm.keys.get("x").key = "y"  
     end  
   }  
 }  
@@ -67,16 +64,41 @@ As you may notice, all step actions (including 'continue') consist of only a sin
 
 ### 2. Non-invasive, anti-distracting interface  
 Unlike nvim-dap-ui, debugmaster doesn’t create six panes to display all its widgets. Instead, it creates a single side panel on the right side with different sections that you can select while in debug mode using corresponding keymaps — even without focusing the side panel window (unlike dap-view). This side panel contains elements that are actually useful to see in passive mode while stepping through code (like scopes and the terminal). For other actions, such as switching and viewing frames and breakpoints, there are special float widgets that you can open using corresponding keymaps.
-I believe this approach better aligns with Vim's modal editing spirit than the IDE-style GUI interface of dap-ui. After all, Vim users tend to despise screen clutter - like IDE-style tab bars or always-open file trees on the left side, etc. They prefer to focus only on important parts and "switch contexts". Additionally, this method adapts better to terminal resizing and windows layout changes
+This approach better aligns with Vim's modal editing spirit than the IDE-style GUI interface of dap-ui. After all, Vim users tend to dislike screen clutter - like IDE-style tab bars or always-open file trees on the left side, etc. They prefer to focus only on important parts and "switch contexts". Additionally, this method adapts better to terminal resizing and windows layout changes
+
+## Configuration
+
+```lua
+local dm = require("debugmaster")  
+-- keymaps changing example
+dm.keys.get("x").key = "y" -- remap x key in debug mode to y
+
+-- changing general plugin options (see 1. note)
+dm.cfg.cursor_hl = false 
+dm.cfg.ui_auto_toggle = false
+
+-- Changing debug mode cursor hl
+-- Debug mode cursor color controlled by "dCursor" highlight group
+-- so to change it you can use the following code
+vim.api.nvim_set_hl(0, "dCursor", {bg = "#FF2C2C"})
+-- make sure to call this after you do vim.cmd("colorscheme x")
+-- otherwise this highlight group could be cleaned by your colorscheme 
+```
+1. You are assumed to discover other dm.cfg options either using lua language
+server autocompletion or inspecting the [cfg](./lua/debugmaster/cfg.lua) file
+
+
+## Recipes  
+Recipes for how to configure debugmaster for reverse debugging of C++, C, and Rust,
+how to display debug mode in your status line,
+starting debug neovim lua code in two keypresses and more can be found [here](./doc/RECIPES.md).
 
 ## Roadmap  
 - [ ] Functional tests  
 - [ ] Stepping granularity float widget  
 - [ ] Exceptions float widget  
 
-## Recipes  
-1. An example of how to display DEBUG mode in your status line can be found here:  
-https://github.com/miroshQa/dotfiles/blob/main/nvim/lua/plugins/lualine.lua  
 
 ## Acknowledgements  
 - Inspired by [nvim-dap-view](https://github.com/igorlfs/nvim-dap-view)  
+- [nvim-dap](https://github.com/mfussenegger/nvim-dap)
