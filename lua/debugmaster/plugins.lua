@@ -100,5 +100,59 @@ plugins.dap_float_close_on_q = {
   end,
 }
 
+---@type dm.Plugin
+plugins.osv_integration = {
+  enabled = false,
+  activate = function()
+    local dap = require("dap")
+    dap.adapters.debugmasterosv = (function()
+      local id = "nvimdebug"
+      local buf = -1
+      dap.listeners.after.disconnect[id] = function()
+        pcall(vim.api.nvim_buf_delete, buf, { force = true, unload = true })
+      end
+      return function(callback)
+        -- we can't capture even integers for the function we dump
+        -- hence using this json trick
+        ---@param vars init-vars
+        local init = function(vars)
+          vim.opt.rtp:prepend(vars.dap_path)
+          vim.opt.rtp:prepend(vars.osv_path)
+          -- disable output because it significantly degrade performance
+          require('osv').launch({ blocking = true, port = vars.port,  output = false })
+        end
+        ---@class init-vars
+        local vars = {
+          port = math.random(49152, 65535),
+          osv_path = assert(vim.go.rtp:match("[^,]+one%-small%-step%-for%-vimkind"),
+            "abort: one-small-step-for-vimkind not installed!!!"),
+          dap_path = assert(vim.go.rtp:match("[^,]+nvim%-dap"), "abort: ndap not installed!!!"),
+        }
+        -- https://gist.github.com/veechs/bc40f1f39b30cb1251825f031cd6d978
+        local cmd = string.format(
+          [[split | terminal nvim --cmd "lua loadstring( vim.base64.decode('%s') )( vim.json.decode(vim.base64.decode('%s')) )"]],
+          vim.base64.encode(string.dump(init)), vim.base64.encode(vim.json.encode(vars))
+        )
+        vim.cmd(cmd)
+        buf = vim.api.nvim_get_current_buf()
+        vim.api.nvim_win_close(0, true)
+        dap.listeners.after.initialize[id] = function()
+          local state = require("debugmaster.state")
+          state.terminal:attach_terminal_to_current_session(buf)
+          state.sidepanel:set_active(state.terminal)
+          dap.listeners.after.initialize[id] = nil
+        end
+        callback({ type = 'server', host = "127.0.0.1", port = vars.port })
+      end
+    end)()
+
+    dap.configurations.lua = dap.configurations.lua or {}
+    table.insert(dap.configurations.lua, {
+      type = 'debugmasterosv',
+      request = 'attach',
+      name = "Debug neovim (lua). Provided by debugmaster.nvim",
+    })
+  end
+}
 
 return plugins

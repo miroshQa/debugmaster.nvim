@@ -1,4 +1,4 @@
-- [Display debug mode in lualine](#Display debug mode in statusline)
+- Display debug mode in lualine
 - Reverse debugging
 - DAP config to debug neovim in two keypress
 
@@ -31,4 +31,13 @@ TODO
 
 
 ## Neovim lua debugging in three keypress
-TODO 
+1. Install [one-small-step-for-vimkind](https://github.com/jbyuki/one-small-step-for-vimkind).
+2. Enable osv integration
+```lua
+dm.plugins.osv_integration.enabled = true
+```
+3. Open any neovim file. Enable debug mode (`leader + d`).
+4. Set breakpoint (`t`). Launch debugging (`c`).
+5. Do actions that trigger breakpoints in the neovim instance opened in the [T]erminal section
+
+TODO: Add video
