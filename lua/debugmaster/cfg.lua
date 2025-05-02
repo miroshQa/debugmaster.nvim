@@ -1,7 +1,6 @@
 ---@class dm.Cfg
 local cfg = {
-  cursor_hl = true,
-  ui_auto_toggle = true,
+  -- nothing here right now 😱
 }
 
 return cfg

@@ -73,9 +73,9 @@ local dm = require("debugmaster")
 -- keymaps changing example
 dm.keys.get("x").key = "y" -- remap x key in debug mode to y
 
--- changing general plugin options (see 1. note)
-dm.cfg.cursor_hl = false 
-dm.cfg.ui_auto_toggle = false
+-- changing some plugin options (see 1. note)
+dm.plugins.cursor_hl.enabled = false
+dm.plugins.ui_auto_toggle.enabled = false
 
 -- Changing debug mode cursor hl
 -- Debug mode cursor color controlled by "dCursor" highlight group
@@ -84,8 +84,8 @@ vim.api.nvim_set_hl(0, "dCursor", {bg = "#FF2C2C"})
 -- make sure to call this after you do vim.cmd("colorscheme x")
 -- otherwise this highlight group could be cleaned by your colorscheme 
 ```
-1. You are assumed to discover other dm.cfg options either using lua language
-server autocompletion or inspecting the [cfg](./lua/debugmaster/cfg.lua) file
+1. You are assumed to discover other dm options either using lua language
+server autocompletion or inspecting the correponding file
 
 
 ## Recipes  
