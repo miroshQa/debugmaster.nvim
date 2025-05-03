@@ -1,1 +1,5 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
+contact_links:
+  - name: Other
+    url: https://github.com/miroshQa/debugmaster.nvim/discussions
+    about: Use Github discussions instead

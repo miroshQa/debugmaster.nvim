@@ -48,7 +48,7 @@ body:
       required: true
   - type: textarea
     attributes:
-      label: Repro
+      label: Repro (Ignore if not applicable or if the issue is easily reproducible.)
       description: Minimal `init.lua` to reproduce this issue. Save as `init.lua` and run with `nvim -u init.lua`
       value: |
         -- set stdpaths to the current directory
@@ -84,9 +84,6 @@ body:
                   local dm = require("debugmaster")
                   vim.keymap.set({ "n", "v" }, "<leader>d", dm.mode.toggle, { nowait = true })
                   vim.keymap.set("t", "<C-/>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
-
-                  -- Example keymap modification:
-                  dm.keys.get("q").key = "O"
                 end
               }
             }

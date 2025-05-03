@@ -1,4 +1,4 @@
-# debugmaster.nvim  
+# 😎debugmaster.nvim  
 
 debugmaster.nvim is dap-ui alternative similar to dap-view that additionally introduces a separate debug mode (like "Insert" or "Normal" mode, but built for debugging) and tightly integrates it with the UI it provides. Simply put, debugmaster.nvim is the lovechild of dap-view and hydra.nvim with polished corners, trying to imagine how a debugging workflow should look in a modal editor.  
 
@@ -8,15 +8,15 @@ https://github.com/user-attachments/assets/f49d5033-7a46-408a-980a-060c8093d5bf
 
 debugmaster.nvim leverages nvim-dap's native widgets and adds its own when needed. The ultimate goal of this plugin is to establish a new debug Neovim mode, making debugging easy and convenient while providing a UI suitable for a modal editor — so you can always stay in the flow, focusing only on important things without any distractions
 
-## Requirements  
+## ⚡️Requirements  
 - Neovim >= 0.10 (>= 0.11 is recommended)  
 - nvim-dap  
 
-## Status
+## ⚠️Status
 The plugin is completely usable, but still under development.
-Expect breaking changes—follow commit notices.
+Breaking changes are possible—follow commit notices.
 
-## Quickstart  
+## 🚀Quickstart  
 Using lazy.nvim plugin manager:  
 
 ```lua  
@@ -49,7 +49,7 @@ return {
 6. Set/toggle breakpoints with `t` and start debugging with `c`.  
 7. Navigate through debug sessions using debug mode keymaps (you can view them in the Help section by pressing `H`).  
 
-## Design Philosophy  
+## 🤔Design Philosophy  
 
 ### 1. Debug mode should be transparent  
 Looking at some keymaps, you might start wondering why I chose X instead of Y. Here, I list some of my considerations to help you understand my decisions.  
@@ -66,7 +66,7 @@ As you may notice, all step actions (including 'continue') consist of only a sin
 Unlike nvim-dap-ui, debugmaster doesn’t create six panes to display all its widgets. Instead, it creates a single side panel on the right side with different sections that you can select while in debug mode using corresponding keymaps — even without focusing the side panel window (unlike dap-view). This side panel contains elements that are actually useful to see in passive mode while stepping through code (like scopes and the terminal). For other actions, such as switching and viewing frames and breakpoints, there are special float widgets that you can open using corresponding keymaps.
 This approach better aligns with Vim's modal editing spirit than the IDE-style GUI interface of dap-ui. After all, Vim users tend to dislike screen clutter - like IDE-style tab bars or always-open file trees on the left side, etc. They prefer to focus only on important parts and "switch contexts". Additionally, this method adapts better to terminal resizing and windows layout changes
 
-## Configuration
+## ⚙️Configuration
 
 ```lua
 local dm = require("debugmaster")  
@@ -88,17 +88,11 @@ vim.api.nvim_set_hl(0, "dCursor", {bg = "#FF2C2C"})
 server autocompletion or inspecting the correponding file
 
 
-## Recipes  
-Recipes for how to configure debugmaster for reverse debugging of C++, C, and Rust,
+## 👨‍🍳Recipes  
+Recipes for how to configure debugmaster for reverse debugging of c++, c, and rust,
 how to display debug mode in your status line,
 starting debug neovim lua code in two keypresses and more can be found [here](./doc/RECIPES.md).
 
-## Roadmap  
-- [ ] Functional tests  
-- [ ] Stepping granularity float widget  
-- [ ] Exceptions float widget  
-
-
-## Acknowledgements  
+## 🙏Acknowledgements  
 - Inspired by [nvim-dap-view](https://github.com/igorlfs/nvim-dap-view)  
 - [nvim-dap](https://github.com/mfussenegger/nvim-dap)
