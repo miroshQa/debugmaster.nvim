@@ -115,6 +115,15 @@ plugins.osv_integration = {
       dap.listeners.after.disconnect[id] = function()
         pcall(vim.api.nvim_buf_delete, buf, { force = true, unload = true })
       end
+      local function find_module_path(name, no_suffix)
+        local suffixes = { string.format("lua/%s.lua", name), string.format("lua/%s/init.lua", name) }
+        for _, suf in ipairs(suffixes) do
+          local path = vim.api.nvim_get_runtime_file(suf, false)[1]
+          if path then
+            return no_suffix and path:match("(.+)" .. suf) or path
+          end
+        end
+      end
       return function(callback)
         -- we can't capture even integers for the function we dump
         -- hence using this json trick
@@ -123,14 +132,13 @@ plugins.osv_integration = {
           vim.opt.rtp:prepend(vars.dap_path)
           vim.opt.rtp:prepend(vars.osv_path)
           -- disable output because it significantly degrade performance
-          require('osv').launch({ blocking = true, port = vars.port,  output = false })
+          require('osv').launch({ blocking = true, port = vars.port, output = false })
         end
         ---@class init-vars
         local vars = {
           port = math.random(49152, 65535),
-          osv_path = assert(vim.go.rtp:match("[^,]+one%-small%-step%-for%-vimkind"),
-            "abort: one-small-step-for-vimkind not installed!!!"),
-          dap_path = assert(vim.go.rtp:match("[^,]+nvim%-dap"), "abort: ndap not installed!!!"),
+          osv_path = assert(find_module_path("osv", true), "abort: one-small-step-for-vimkind not installed!!!"),
+          dap_path = assert(find_module_path("dap", true), "abort: dap not installed!!!"),
         }
         -- https://gist.github.com/veechs/bc40f1f39b30cb1251825f031cd6d978
         local cmd = string.format(
