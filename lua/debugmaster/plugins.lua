@@ -15,8 +15,12 @@ plugins.cursor_hl = (function()
       if next(dcursor) == nil then
         api.nvim_set_hl(0, "dCursor", { bg = "#2da84f" })
       end
-      local cursor_mode_off = "n-v-sm:block,i-t-ci-ve-c:ver25,r-cr-o:hor20"
-      local cursor_mode_on = "n-v-sm:block-dCursor,i-ci-ve-c:ver25-dCursor,t:ver25,r-cr-o:hor20"
+      local cursor_mode_off = "n-v-sm:block,i-ci-ve-c:ver25,r-cr-o:hor20"
+      local cursor_mode_on = "n-v-sm:block-dCursor,i-ci-ve-c:ver25-dCursor,r-cr-o:hor20"
+      if vim.fn.has("nvim-0.11") == 1 then
+        cursor_mode_on = cursor_mode_on .. ",t:ver25"
+        cursor_mode_off = cursor_mode_off .. ",t:ver25"
+      end
 
       api.nvim_create_autocmd("User", {
         pattern = "DebugModeChanged",

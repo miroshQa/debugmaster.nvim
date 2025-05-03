@@ -9,7 +9,7 @@ https://github.com/user-attachments/assets/f49d5033-7a46-408a-980a-060c8093d5bf
 debugmaster.nvim leverages nvim-dap's native widgets and adds its own when needed. The ultimate goal of this plugin is to establish a new debug Neovim mode, making debugging easy and convenient while providing a UI suitable for a modal editor — so you can always stay in the flow, focusing only on important things without any distractions
 
 ## Requirements  
-- Neovim >= 0.11  
+- Neovim >= 0.10 (>= 0.11 is recommended)  
 - nvim-dap  
 
 ## Status
