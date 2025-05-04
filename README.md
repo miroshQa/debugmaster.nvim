@@ -1,6 +1,6 @@
 # 😎debugmaster.nvim  
 
-debugmaster.nvim is dap-ui alternative similar to dap-view that additionally introduces a separate debug mode (like "Insert" or "Normal" mode, but built for debugging) and tightly integrates it with the UI it provides. Simply put, debugmaster.nvim is the lovechild of dap-view and hydra.nvim with polished corners, trying to imagine how a debugging workflow should look in a modal editor.  
+debugmaster.nvim is a dap-ui alternative, similar to dap-view, that additionally introduces a separate debug mode (like "Insert" or "Normal" mode, but built for debugging) and tightly integrates it with the UI it provides. Simply put, debugmaster.nvim is the child of dap-view and hydra.nvim, trying to imagine how a debugging workflow should look in a modal editor.  
 
 
 https://github.com/user-attachments/assets/f49d5033-7a46-408a-980a-060c8093d5bf
@@ -26,19 +26,21 @@ return {
     config = function()  
       local dap = require("dap")  
       -- Configure your debug adapters here  
-      -- https://github.com/mfussenegger/nvim-dap/blob/master/doc/dap.txt  
+      -- https://github.com/mfussenegger/nvim-dap/wiki/Debug-Adapter-installation
     end,  
   },  
   {  
     "miroshQa/debugmaster.nvim",  
     config = function()  
       local dm = require("debugmaster")  
+      -- make sure you don't have any other keymaps that starts with "<leader>d" to avoid delay
       vim.keymap.set({ "n", "v" }, "<leader>d", dm.mode.toggle, { nowait = true })  
       vim.keymap.set("t", "<C-/>", "<C-\\><C-n>", {desc = "Exit terminal mode"})  
     end  
   }  
 }  
 ```  
+NOTE: Don't mix this plugin with dap-ui!
 
 ## Usage  
 1. Configure your debug adapters using nvim-dap.  
