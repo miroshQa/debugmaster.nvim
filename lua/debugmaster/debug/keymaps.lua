@@ -254,7 +254,7 @@ local misc_group = {
       key = "dr",
       desc = "Restart the current session or rerun last if none",
       action = function()
-        require("debugmaster.plugins").last_config_rerunner.run_last_cached()
+        require("debugmaster.plugins").plugins.last_config_rerunner.run_last_cached()
       end
     },
     {

@@ -1,5 +1,6 @@
 local api = vim.api
----@type table<string, dm.Plugin>
+local M = {}
+
 local plugins = {}
 
 ---@class dm.Plugin
@@ -167,4 +168,18 @@ plugins.osv_integration = {
   end
 }
 
-return plugins
+local plugins_enabled = false
+M.init = function()
+  if not plugins_enabled then
+    for _, plugin in pairs(M.plugins) do
+      if plugin.enabled == nil or plugin.enabled then
+        plugin.activate()
+      end
+    end
+    plugins_enabled = true
+  end
+end
+
+M.plugins = plugins
+
+return M
