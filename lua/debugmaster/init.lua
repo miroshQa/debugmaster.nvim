@@ -15,7 +15,7 @@ M.mode = {
           plugin.activate()
         end
       end
-      plugins_enabled = false
+      plugins_enabled = true
     end
     require("debugmaster.state")
     require("debugmaster.debug.mode").toggle()
