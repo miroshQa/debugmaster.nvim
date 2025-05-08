@@ -11,7 +11,8 @@ M.mode = {
     require("debugmaster.plugins").init()
     require("debugmaster.state")
     require("debugmaster.debug.mode").toggle()
-  end
+  end,
+  disable = require("debugmaster.debug.mode").disable
 }
 
 M.keys = {
