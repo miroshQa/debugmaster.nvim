@@ -1,4 +1,5 @@
 local utils = require("debugmaster.utils")
+local cfg = require("debugmaster.cfg")
 local api = vim.api
 local M = {}
 
@@ -270,6 +271,9 @@ local misc_group = {
         require("dap").terminate()
         local state = require("debugmaster.state")
         state.sidepanel:close()
+        if cfg.exit_debug_mode_on_quit then
+          require("debugmaster.debug.mode").disable()
+        end
       end,
       desc = "Quit debug"
     },
