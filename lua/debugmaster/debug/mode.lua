@@ -47,23 +47,29 @@ local function save_original_settings()
     end
   end
 end
-save_original_settings()
 
-function M.enable()
-  if active then
-    return
-  end
-  active = true
-  for _, group in ipairs(groups) do
-    for _, mapping in ipairs(group.mappings) do
-      local action = mapping.action
-      for _, mode in ipairs(mapping.modes or { "n" }) do
-        vim.keymap.set(mode, mapping.key, action, { nowait = mapping.nowait })
+M.enable = (function()
+  local is_first_enable = true
+  return function()
+    if is_first_enable then
+      save_original_settings()
+      is_first_enable = false
+    end
+    if active then
+      return
+    end
+    active = true
+    for _, group in ipairs(groups) do
+      for _, mapping in ipairs(group.mappings) do
+        local action = mapping.action
+        for _, mode in ipairs(mapping.modes or { "n" }) do
+          vim.keymap.set(mode, mapping.key, action, { nowait = mapping.nowait })
+        end
       end
     end
+    api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = true } })
   end
-  api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = true } })
-end
+end)()
 
 function M.disable()
   if not active then
