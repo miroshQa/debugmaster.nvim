@@ -194,12 +194,13 @@ local float_widgets = {
       desc = "Breakpoints widget"
     },
     {
-      key = "di",
+      key = "I",
+      modes = { "n", "v" },
       action = function()
         pcall(require('dap.ui.widgets').hover)
         utils.register_to_close_on_leave(api.nvim_get_current_win())
       end,
-      desc = "Inspect variable under cursor widget",
+      desc = "Inspect variable or visually selected expression",
     },
   }
 }
@@ -300,19 +301,6 @@ local misc_group = {
         end)
       end,
       desc = "Execute last yanked or deleted text in the repl",
-    },
-    {
-      key = "X",
-      action = function()
-        local state = require("debugmaster.state")
-        local text = vim.fn.getreg('"')
-        require("dap").repl.execute("\n" .. text)
-        api.nvim_buf_call(state.repl.buf, function()
-          vim.cmd("normal G")
-        end)
-      end,
-      desc = "Same as `x` but without switching to the repl",
-      -- that is useful if you debug neovim inside neovim :)
     },
     {
       key = "dm",
