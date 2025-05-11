@@ -9,7 +9,7 @@ function Repl.new()
   ---@class dm.ui.Repl
   local self = setmetatable({}, {__index = Repl})
 
-  local repl_buf, repl_win = repl.open()
+  local repl_buf, repl_win = repl.open(nil, "vertical split")
   api.nvim_win_close(repl_win, true)
   self.name = "[R]epl"
   self.buf = repl_buf
