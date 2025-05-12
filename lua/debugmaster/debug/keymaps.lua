@@ -77,33 +77,33 @@ local sidepanel = {
       key = "S",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.scopes)
+        state.sidepanel:toggle_active_with_open(state.scopes)
       end,
-      desc = "Open scopes (global, local, etc variables)",
+      desc = "Toggle scopes (global, local, etc variables)",
     },
     {
       key = "T",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.terminal)
+        state.sidepanel:toggle_active_with_open(state.terminal)
       end,
-      desc = "Open terminal",
+      desc = "Toggle terminal",
     },
     {
       key = "R",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.repl)
+        state.sidepanel:toggle_active_with_open(state.repl)
       end,
-      desc = "Open repl",
+      desc = "Toggle repl",
     },
     {
       key = "H",
       action = function()
         local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.help)
+        state.sidepanel:toggle_active_with_open(state.help)
       end,
-      desc = "Open help",
+      desc = "Toggle help",
     },
     {
       key = "}",

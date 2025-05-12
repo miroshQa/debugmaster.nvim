@@ -215,6 +215,18 @@ function Sidepanel:set_active_with_open(comp)
   self:open()
 end
 
+-- if this comp already active then close it
+-- set comp as active and open panel if it is closed
+---@param comp dm.ui.Sidepanel.IComponent
+function Sidepanel:toggle_active_with_open(comp)
+  if self.active == comp and self:is_open() then
+    self:close()
+  else
+    self:set_active(comp)
+    self:open()
+  end
+end
+
 ---@param comp dm.ui.Sidepanel.IComponent
 function Sidepanel:add_component(comp)
   table.insert(self.components, comp)
