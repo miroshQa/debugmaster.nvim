@@ -1,26 +1,37 @@
-local widgets = require('dap.ui.widgets')
 local api = vim.api
+local tree = require("debugmaster.ui.tree")
+-- need to rewrite it in the future, so scopse module didn't know about 
+-- dap at all, it absolutes isn't his responsibility. It just should accept data (scopes)
+-- from some function like Scopes.render(scopes) and render it
+local dap = require("dap")
+local after = dap.listeners.after
+local before = dap.listeners.before
+local id = "debugmaster"
 
----@class dm.ui.Scopes: dm.ui.Sidepanel.IComponent
 local Scopes = {}
 
 function Scopes.new()
-  ---@class dm.ui.Scopes
-  local self = setmetatable({}, {__index = Scopes})
-  local scopes = widgets.sidebar(widgets.scopes)
-  local scopes_buf, scopes_win = scopes.open()
-  api.nvim_win_close(scopes_win, true)
-  self.buf = scopes_buf
+---@class dm.ui.Scopes: dm.ui.Sidepanel.IComponent
+  local self = {}
+  self.buf = vim.api.nvim_create_buf(false, true)
   self.name = "[S]copes"
-  vim.keymap.set("n", "<Tab>", "<CR>", {buffer = self.buf, remap = true})
-  vim.keymap.del("n", "o", {buffer = self.buf })
 
-  vim.keymap.set("n", "r", scopes.refresh, {buffer = self.buf})
+  ---@param s any
+  ---@param err any
+  ---@param res dap.ScopesResponse
+  ---@param _ any
+  ---@param req_id any
+  after.scopes[id] = function(s, err, res, _, req_id)
+  end
+
+  ---@param res dap.VariableResponse
+  after.variables[id] = function (s, err, res, _, _)
+    vim.print(res)
+  end
 
   api.nvim_create_autocmd("User", {
     pattern = "DapSessionChanged",
     callback = vim.schedule_wrap(function()
-      scopes.refresh()
     end)
   })
 
