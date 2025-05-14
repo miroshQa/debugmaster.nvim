@@ -19,14 +19,14 @@ function Breakpoints.new()
 
   ---@alias dm.BpContainer {kind: "container", children: dm.Bp[], buf: number, expanded: boolean }
   ---@alias dm.Bp {kind: "bp", line: number, condition?: string, buf: number}
-  ---@alias dm.BpDummyRoot {kind: "dummyRoot"}
+  ---@alias dm.BpDummyRoot {kind: "dummy"}
   ---@alias dm.BpTreeNode dm.BpContainer | dm.Bp
 
   ---@param node dm.BpTreeNode
   local function render_node(node)
     -- yeah {kind = "a"} or {kind = "b"} notation doesn't work indeed
     -- Please someone create good lsp server for lua please...
-    if node.kind == "dummyRoot" then
+    if node.kind == "dummy" then
       local help = {
         { { "t - remove breakpoint or all breakpoints in the file", "Comment" } },
         { { "c - change breakpoint condition", "Comment" } }
@@ -54,7 +54,7 @@ function Breakpoints.new()
   local function rerender_tree()
     ---@type dm.BpDummyRoot
     local root = {
-      kind = "dummyRoot",
+      kind = "dummy",
       expanded = true,
       children = {},
     }

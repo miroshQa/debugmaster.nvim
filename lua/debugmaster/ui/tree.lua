@@ -18,7 +18,7 @@ local tree = {}
 ---@field buf number
 ---@field nodes_by_line table<number, dm.TreeNode>
 
----@alias dm.NodeRenderer fun(node: dm.TreeNode, depth: number, parent: dm.TreeNode?): dm.HlLine, dm.RenderAdditional?
+---@alias dm.NodeRenderer fun(node: dm.TreeNode, depth: number, parent: dm.TreeNode?): dm.HlLine?, dm.RenderAdditional?
 ---@class dm.TreeRenderParams
 ---@field buf number
 ---@field root dm.TreeNode
@@ -45,27 +45,28 @@ function tree.render(opts)
     local segments, additional = opts.renderer(cur, depth, parent)
     local line_text = ""
     local current_col = 0
-    for _, seg in ipairs(segments) do
-      local seg_text = seg[1]
-      line_text = line_text .. seg_text
-      if seg[2] then
-        table.insert(highlights, {
-          line = line_num,
-          hl = seg[2],
-          col_start = current_col,
-          col_end = current_col + #seg_text
-        })
+
+    if segments then
+      for _, seg in ipairs(segments) do
+        local seg_text = seg[1]
+        line_text = line_text .. seg_text
+        if seg[2] then
+          table.insert(highlights, {
+            line = line_num,
+            hl = seg[2],
+            col_start = current_col,
+            col_end = current_col + #seg_text
+          })
+        end
+        current_col = current_col + #seg_text
       end
-      current_col = current_col + #seg_text
+      if additional and additional.vlines and #additional.vlines > 0 then
+        table.insert(virt_line_marks, { line = line_num, lines = additional.vlines })
+      end
+      table.insert(lines, line_text)
+      nodes_by_line[line_num] = cur
+      line_num = line_num + 1
     end
-
-    if additional and additional.vlines and #additional.vlines > 0 then
-      table.insert(virt_line_marks, { line = line_num, lines = additional.vlines })
-    end
-
-    table.insert(lines, line_text)
-    nodes_by_line[line_num] = cur
-    line_num = line_num + 1
 
     if cur.expanded and cur.children then
       for _, child in ipairs(cur.children) do
@@ -87,11 +88,11 @@ function tree.render(opts)
   end
 
   for _, mark in ipairs(virt_line_marks) do
-    api.nvim_buf_set_extmark( buf, ns_id, mark.line, 0, {
-        virt_lines = mark.lines,
-        virt_lines_above = false,
-      })
-    end
+    api.nvim_buf_set_extmark(buf, ns_id, mark.line, 0, {
+      virt_lines = mark.lines,
+      virt_lines_above = false,
+    })
+  end
 
   ---@type dm.TreeRenderSnapshot
   local snapshot = {
