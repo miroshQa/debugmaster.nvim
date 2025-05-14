@@ -70,34 +70,6 @@ plugins.ui_auto_toggle = (function()
   return plugin
 end)()
 
--- probably this code doesn't fit in the plugins concept. Need to move it somewhere
-plugins.last_config_rerunner = (function()
-  local dap = require("dap")
-  local session_configs = {}
-  local last_config = nil
-  ---@type dm.Plugin
-  local plugin = {
-    activate = function()
-      dap.listeners.after.event_initialized["dm-saveconfig"] = function(session)
-        local config = session.config
-        last_config = config
-        session_configs[session.id] = config
-      end
-    end,
-    run_last_cached = function()
-      local session = require("dap").session()
-      if session then
-        local config = assert(session_configs[session.id], "Active session exist, but config doesn't. Strange...")
-        return dap.run(config)
-      elseif last_config then
-        return dap.run(last_config)
-      end
-      print("No configuration available to re-run")
-    end
-  }
-  return plugin
-end)()
-
 ---@type dm.Plugin
 plugins.dap_float_close_on_q = {
   activate = function()

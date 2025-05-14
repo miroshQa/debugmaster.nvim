@@ -1,6 +1,10 @@
-local utils = require("debugmaster.utils")
 local api = vim.api
-local M = {}
+local utils = require("debugmaster.utils")
+
+---Debug Mode Manager
+local DmManager = {}
+
+--- [[DEFAULT KEYMAPS]]
 
 ---@class dm.KeySpec
 ---@field key string
@@ -17,7 +21,7 @@ local M = {}
 ---@field mappings dm.KeySpec[]
 
 ---@type dm.MappingsGroup
-local move_debugger_group = {
+local move_debugger = {
   name = "MOVE DEBUGGER",
   hlgroup = "ERROR",
   -- the main goal when developing keymaps for debug mode is to not override normal mode motions
@@ -41,7 +45,9 @@ local move_debugger_group = {
     {
       key = "c",
       nowait = true,
-      action = function() require("dap").continue() end,
+      action = function()
+        require("dap").continue()
+      end,
       desc = "Continue or start debug session",
     },
     {
@@ -255,7 +261,7 @@ local misc_group = {
       key = "dr",
       desc = "Restart the current session or rerun last if none",
       action = function()
-        require("debugmaster.plugins").plugins.last_config_rerunner.run_last_cached()
+        require("debugmaster.managers.SessionsManager").run_last_cached()
       end
     },
     {
@@ -326,33 +332,112 @@ local misc_group = {
   }
 }
 
----@type dm.MappingsGroup[]
-M.groups = {
-  move_debugger_group,
+local groups = {
+  move_debugger,
   breakpoings_group,
   sidepanel,
   float_widgets,
   misc_group,
 }
+--- [[DEFAULT KEYMAPS END]]
 
----Give the reference to the key entry so you can remap it to something else
----Throws an error if the key doesn't exist
----@return dm.KeySpec
-function M.get(key)
-  for _, group in ipairs(M.groups) do
+
+local active = false
+local originals_saving_required = true
+
+---@class dm.OrignalKeymap
+---@field callback function?
+---@field rhs string?
+---@field desc string?
+---@field silent boolean?
+---@type table<string, table<string, dm.OrignalKeymap>> [mode: {key: OriginalKeymap}, ...]
+local originals = {}
+
+local function save_original_keymaps()
+  local all = { n = api.nvim_get_keymap("n"), v = api.nvim_get_keymap("v") }
+  local lhs_to_map = {}
+
+  for mode, mappings in pairs(all) do
+    lhs_to_map[mode] = {}
+    for _, mapping in ipairs(mappings) do
+      lhs_to_map[mode][mapping.lhs] = mapping
+    end
+  end
+
+  for _, group in ipairs(groups) do
     for _, mapping in ipairs(group.mappings) do
-      if mapping.key == key then
-        return mapping
+      for _, mode in ipairs(mapping.modes or { "n" }) do
+        local key = mapping.key
+        if not originals[mode] then
+          originals[mode] = {}
+        end
+        local orig = lhs_to_map[mode][key] or {}
+        originals[mode][key] = {
+          callback = orig.callback,
+          rhs = orig.rhs,
+          desc = orig.desc,
+          silent = orig.silent,
+        }
       end
     end
   end
-  error("Key doesn't exist")
 end
 
---- Add new user mapping to the MISCELANOUS group
----@param mapping dm.KeySpec
-function M.add(mapping)
-  table.insert(misc_group.mappings, mapping)
+function DmManager.enable()
+  if active then
+    return
+  end
+  if originals_saving_required then
+    originals = {}
+    save_original_keymaps()
+    originals_saving_required = false
+  end
+  for _, group in ipairs(groups) do
+    for _, mapping in ipairs(group.mappings) do
+      local action = mapping.action
+      for _, mode in ipairs(mapping.modes or { "n" }) do
+        vim.keymap.set(mode, mapping.key, action, { nowait = mapping.nowait })
+      end
+    end
+  end
+  api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = true } })
+  active = true
 end
 
-return M
+function DmManager.disable()
+  if not active then
+    return
+  end
+  active = false
+  for _, group in ipairs(groups) do
+    for _, mapping in ipairs(group.mappings) do
+      local key = mapping.key
+      for _, mode in ipairs(mapping.modes or { "n" }) do
+        local orig = originals[mode][key]
+        local rhs = orig.callback or orig.rhs or key
+        vim.keymap.set(mode, key, rhs, {
+          desc = orig.desc,
+          silent = orig.silent,
+        })
+      end
+    end
+  end
+  api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = false } })
+end
+
+function DmManager.toggle()
+  (active and DmManager.disable or DmManager.enable)()
+end
+
+function DmManager.is_active()
+  return active
+end
+
+function DmManager.get_groups()
+  -- if user required groups he can change keymaps,
+  -- hence we should updat originals on next debug mode activate
+  originals_saving_required = true
+  return groups
+end
+
+return DmManager

@@ -1,5 +1,4 @@
 local M = {}
-local keymaps = require("debugmaster.debug.keymaps")
 
 M.cfg = require("debugmaster.cfg")
 
@@ -8,16 +7,38 @@ M.plugins = require("debugmaster.plugins").plugins
 
 M.mode = {
   toggle = function()
+    -- TODO: Move this whole logic except mode toggle to deferred_init.lua or something
+    require("debugmaster.managers.SessionsManager")
     require("debugmaster.plugins").init()
     require("debugmaster.state")
-    require("debugmaster.debug.mode").toggle()
+    require("debugmaster.managers.DmManager").toggle()
   end,
-  disable = require("debugmaster.debug.mode").disable
+  disable = function()
+    require("debugmaster.managers.DmManager").disable()
+  end
 }
 
 M.keys = {
-  get = keymaps.get,
-  add = keymaps.add
+  ---Give the reference to the key entry so you can remap it to something else
+  ---Throws an error if the key doesn't exist
+  ---@return dm.KeySpec
+  get = function(key)
+    local groups = require("debugmaster.managers.DmManager").get_groups()
+    for _, group in pairs(groups) do
+      for _, mapping in ipairs(group.mappings) do
+        if mapping.key == key then
+          return mapping
+        end
+      end
+    end
+    error("Key doesn't exist")
+  end,
+  --- Add new user mapping to the last group
+  ---@param mapping dm.KeySpec
+  add = function(mapping)
+    local groups = require("debugmaster.managers.DmManager").get_groups()
+    table.insert(groups[#groups].mappings, mapping)
+  end
 }
 
 return M
