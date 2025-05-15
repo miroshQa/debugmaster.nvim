@@ -36,7 +36,7 @@ function Scopes.new()
       return { { node.name } }
     elseif node.kind == "var" then
       local indent = string.rep("  ", depth)
-      return { { indent }, { node.name }, { " = " }, { node.value } }
+      return { { indent }, { node.name, "Exception" }, { " = " }, { node.value } }
     end
   end
 

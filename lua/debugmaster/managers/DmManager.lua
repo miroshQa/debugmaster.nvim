@@ -1,5 +1,6 @@
 local api = vim.api
 local utils = require("debugmaster.utils")
+local tree = require("debugmaster.ui.tree")
 
 ---Debug Mode Manager
 local DmManager = {}
@@ -172,17 +173,14 @@ local float_widgets = {
     {
       key = "ds",
       action = function()
-        local widgets = require("dap.ui.widgets")
-        local ok, sessions = pcall(widgets.cursor_float, widgets.sessions)
-        if not ok then
-          return
-        end
-        utils.register_to_close_on_leave(api.nvim_get_current_win())
-        vim.keymap.set("n", "<CR>", vim.schedule_wrap(function()
-          require('dap.ui').trigger_actions({ mode = 'first' })
-          api.nvim_exec_autocmds("User", { pattern = "DapSessionChanged" })
-          require("dap").focus_frame()
-        end), { expr = true, buffer = sessions.buf })
+        local sessions = require("debugmaster.ui.sessions")
+        local root = sessions.build_tree()
+        local buf = api.nvim_create_buf(false, true)
+        tree.render { root = root, buf = buf, renderer = sessions.render_node }
+        utils.open_floating_window(buf, {
+          min_width = 60,
+          additional_height = 3,
+        })
       end,
       desc = "Debug sessions widget",
     },
