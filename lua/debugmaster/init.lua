@@ -8,9 +8,9 @@ M.plugins = require("debugmaster.plugins").plugins
 M.mode = {
   toggle = function()
     -- TODO: Move this whole logic except mode toggle to deferred_init.lua or something
+    require("debugmaster.managers.UiManager")
     require("debugmaster.managers.SessionsManager")
     require("debugmaster.plugins").init()
-    require("debugmaster.state")
     require("debugmaster.managers.DmManager").toggle()
   end,
   disable = function()

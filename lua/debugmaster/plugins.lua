@@ -44,25 +44,25 @@ plugins.ui_auto_toggle = (function()
     activate = function()
       local dap = require("dap")
       dap.listeners.before.launch["debugmaster"] = function()
-        require("debugmaster.state").sidepanel:open()
+        require("debugmaster.managers.UiManager").sidepanel:open()
       end
 
       dap.listeners.before.attach["debugmaster"] = function()
-        require("debugmaster.state").sidepanel:open()
+        require("debugmaster.managers.UiManager").sidepanel:open()
       end
 
       dap.listeners.before.event_terminated["debugmaster"] = function()
-        require("debugmaster.state").sidepanel:close()
+        require("debugmaster.managers.UiManager").sidepanel:close()
         print("dap terminated")
       end
 
       dap.listeners.before.event_exited["debugmaster"] = function()
-        require("debugmaster.state").sidepanel:close()
+        require("debugmaster.managers.UiManager").sidepanel:close()
         print("dap exited")
       end
 
       dap.listeners.before.disconnect["debugmaster"] = function()
-        require("debugmaster.state").sidepanel:close()
+        require("debugmaster.managers.UiManager").sidepanel:close()
         print("dap disconnected")
       end
     end
@@ -122,9 +122,9 @@ plugins.osv_integration = {
         buf = vim.api.nvim_get_current_buf()
         vim.api.nvim_win_close(0, true)
         dap.listeners.after.initialize[id] = function()
-          local state = require("debugmaster.state")
-          state.terminal:attach_terminal_to_current_session(buf)
-          state.sidepanel:set_active(state.terminal)
+          local ui = require("debugmaster.managers.UiManager")
+          ui.terminal.attach_terminal_to_current_session(buf)
+          ui.sidepanel:set_active(ui.terminal)
           dap.listeners.after.initialize[id] = nil
         end
         callback({ type = 'server', host = "127.0.0.1", port = vars.port })

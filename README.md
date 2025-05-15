@@ -16,6 +16,11 @@ The goals of this plugin:
 - Neovim >= 0.10 (>= 0.11 is recommended)  
 - nvim-dap  
 
+## Features
+- Multiple sessiosn support
+- Recursive variables expanding!
+- [osv](https://github.com/jbyuki/one-small-step-for-vimkind) integration: debug neovim lua runtime in 3 keypres!
+
 ## ⚠️Status
 The plugin is completely usable, but still under development.
 Breaking changes are possible—follow commit notices.

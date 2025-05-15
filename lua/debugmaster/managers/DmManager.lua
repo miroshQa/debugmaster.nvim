@@ -1,6 +1,6 @@
 local api = vim.api
-local utils = require("debugmaster.utils")
-local tree = require("debugmaster.ui.tree")
+local view = require("debugmaster.components.generic.view")
+local tree = require("debugmaster.components.generic.tree")
 
 ---Debug Mode Manager
 local DmManager = {}
@@ -67,80 +67,78 @@ local sidepanel = {
     {
       key = "u",
       action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:toggle()
+        require("debugmaster.managers.UiManager").sidepanel:toggle()
       end,
       desc = "Toggle ui",
     },
     {
       key = "U",
       action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:toggle_layout()
+        require("debugmaster.managers.UiManager").sidepanel:toggle_layout()
       end,
       desc = "Toggle ui float mode",
     },
     {
       key = "S",
       action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.scopes)
+        local UiManager = require("debugmaster.managers.UiManager")
+        UiManager.sidepanel:set_active_with_open(UiManager.scopes)
       end,
       desc = "Open scopes (global, local, etc variables)",
     },
     {
       key = "T",
       action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.terminal)
+        local UiManager = require("debugmaster.managers.UiManager")
+        UiManager.sidepanel:set_active_with_open(UiManager.terminal)
       end,
       desc = "Open terminal",
     },
     {
       key = "R",
       action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.repl)
+        local UiManager = require("debugmaster.managers.UiManager")
+        UiManager.sidepanel:set_active_with_open(UiManager.repl)
       end,
       desc = "Open repl",
     },
     {
       key = "H",
       action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.help)
+        local UiManager = require("debugmaster.managers.UiManager")
+        UiManager.sidepanel:set_active_with_open(UiManager.help)
       end,
       desc = "Open help",
     },
     {
       key = "}",
       action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:rotate(1)
+        local UiManager = require("debugmaster.managers.UiManager")
+        UiManager.sidepanel:rotate(1)
       end,
       desc = "Rotate sidenapel clockwise",
     },
     {
       key = "{",
       action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:rotate(-1)
+        local UiManager = require("debugmaster.managers.UiManager")
+        UiManager.sidepanel:rotate(-1)
       end,
       desc = "Rotate sidenapel anticlockwise",
     },
     {
       key = "-",
       action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:resize(-10)
+        local UiManager = require("debugmaster.managers.UiManager")
+        UiManager.sidepanel:resize(-10)
       end,
       desc = "Decrease sidenapel size",
     },
     {
       key = "+",
       action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:resize(10)
+        local UiManager = require("debugmaster.managers.UiManager")
+        UiManager.sidepanel:resize(10)
       end,
       desc = "Increase sidepanel size",
     }
@@ -157,7 +155,7 @@ local float_widgets = {
       action = function()
         local widgets = require("dap.ui.widgets")
         pcall(widgets.cursor_float, widgets.frames)
-        utils.register_to_close_on_leave(api.nvim_get_current_win())
+        view.close_on_leave(api.nvim_get_current_win())
       end,
       desc = "Frames widget"
     },
@@ -166,34 +164,25 @@ local float_widgets = {
       action = function()
         local widgets = require("dap.ui.widgets")
         pcall(widgets.cursor_float, widgets.threads)
-        utils.register_to_close_on_leave(api.nvim_get_current_win())
+        view.close_on_leave(api.nvim_get_current_win())
       end,
       desc = "Threads widget"
     },
     {
       key = "ds",
       action = function()
-        local sessions = require("debugmaster.ui.sessions")
-        local root = sessions.build_tree()
-        local buf = api.nvim_create_buf(false, true)
-        tree.render { root = root, buf = buf, renderer = sessions.render_node }
-        utils.open_floating_window(buf, {
-          min_width = 60,
-          additional_height = 3,
-        })
+        local s = require("debugmaster.managers.UiManager").sessions
+        view.new_float_anchored(s.buf)
+        view.close_on_leave(s.buf)
       end,
       desc = "Debug sessions widget",
     },
     {
       key = "db",
       action = function()
-        local state = require("debugmaster.state")
-        utils.open_floating_window(state.breakpoints.buf, {
-          min_width = 60,
-          additional_height = 3,
-        })
-        utils.register_to_close_on_leave(api.nvim_get_current_win())
-        vim.bo[state.breakpoints.buf].filetype = "dap-float"
+        local b = require("debugmaster.managers.UiManager").breakpoints
+        view.new_float_anchored(b.buf)
+        view.close_on_leave(b.buf)
       end,
       desc = "Breakpoints widget"
     },
@@ -202,7 +191,7 @@ local float_widgets = {
       modes = { "n", "v" },
       action = function()
         pcall(require('dap.ui.widgets').hover)
-        utils.register_to_close_on_leave(api.nvim_get_current_win())
+        view.close_on_leave(api.nvim_get_current_win())
       end,
       desc = "Inspect variable or visually selected expression",
     },
@@ -273,8 +262,7 @@ local misc_group = {
       key = "dq",
       action = function()
         require("dap").terminate()
-        local state = require("debugmaster.state")
-        state.sidepanel:close()
+        require("debugmaster.managers.UiManager").sidepanel:close()
       end,
       desc = "Quit debug"
     },

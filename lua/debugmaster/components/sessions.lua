@@ -1,4 +1,5 @@
 local dap = require("dap")
+local tree = require("debugmaster.components.generic.tree")
 
 local sessions = {}
 
@@ -17,6 +18,8 @@ function sessions.render_node(node)
   end
 end
 
+---comment
+---@return dm.SessionDummyNode
 function sessions.build_tree()
   ---@type dm.SessionDummyNode
   local root = { kind = "dummy", children = {}, expanded = true }
@@ -29,4 +32,14 @@ function sessions.build_tree()
   return root
 end
 
+sessions.comp = (function()
+  local sessions_tree = tree.new(
+    sessions.build_tree(),
+    {renderer = sessions.render_node}
+  )
+  return {
+    name = "Sessions",
+    buf = sessions_tree.buf
+  }
+end)()
 return sessions

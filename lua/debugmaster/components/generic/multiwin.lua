@@ -1,58 +1,23 @@
 local utils = require("debugmaster.utils")
+local view = require("debugmaster.components.generic.view")
 local api = vim.api
 
----@class dm.ui.Sidepanel.IComponent
+---@class dm.ui.MultiWinComp
 ---@field name string
 ---@field buf number
 
----@class dm.ui.Sidepanel
-local Sidepanel = {}
+---@class dm.ui.MultiWin
+local MultiWin = {}
 
-
-function Sidepanel.new()
-  ---@class dm.ui.Sidepanel
-  local self = setmetatable({}, { __index = Sidepanel })
-  self.win = -1 -- always need to check if valid before doing something
-  self.direction = "right"
-  self.float = false
-  self.size = 50 -- size for the split. not applied to float. always in the range [10;90]
-
-  ---@type dm.ui.Sidepanel.IComponent[]
-  self.components = {}
-  ---@type dm.ui.Sidepanel.IComponent
-  self.active = nil
-
-  api.nvim_create_autocmd("User", {
-    pattern = "WidgetBufferNumberChanged",
-    callback = vim.schedule_wrap(function()
-      if self.active and self:is_open() then
-        api.nvim_win_set_buf(self.win, self.active.buf)
-        self:_cook_winbar()
-      end
-    end)
-  })
-
-  api.nvim_create_autocmd("VimResized", {
-    callback = function()
-      if self:is_open() then
-        self:close()
-        self:open()
-      end
-    end
-  })
-
-  return self
-end
-
-function Sidepanel:is_open()
+function MultiWin:is_open()
   return api.nvim_win_is_valid(self.win)
 end
 
-function Sidepanel:is_focused()
+function MultiWin:is_focused()
   return api.nvim_get_current_win() == self.win
 end
 
-function Sidepanel:toggle()
+function MultiWin:toggle()
   if not self:is_open() then
     self:open()
   else
@@ -60,12 +25,12 @@ function Sidepanel:toggle()
   end
 end
 
----@class dm.ui.Sidepanel.OpenOptions
+---@class dm.ui.MultiWin.OpenOptions
 ---@field direction "left" | "right" | "above" | "below" | nil Opens in previous state if nil (right when open first time)
 ---@field float boolean? If float specified then it creates float window and ignore direction
 
----@param opts dm.ui.Sidepanel.OpenOptions?
-function Sidepanel:open(opts)
+---@param opts dm.ui.MultiWin.OpenOptions?
+function MultiWin:open(opts)
   if self:is_open() then
     return
   end
@@ -82,13 +47,13 @@ function Sidepanel:open(opts)
   local enter = false
 
   if float then
-    cfg = utils.make_center_float_win_cfg()
+    cfg = view.make_centered_float_cfg()
     enter = true
   else
     cfg.split = direction
     cfg.win = -1
-    cfg.width = math.floor(vim.o.columns  * (self.size / 100))
-    cfg.height = math.floor(vim.o.lines  * (self.size / 100))
+    cfg.width = math.floor(vim.o.columns * (self.size / 100))
+    cfg.height = math.floor(vim.o.lines * (self.size / 100))
   end
 
   --  it saves us if we try open it in a float window
@@ -105,12 +70,12 @@ function Sidepanel:open(opts)
   api.nvim_set_option_value("number", false, { win = self.win })
   api.nvim_set_option_value("relativenumber", false, { win = self.win })
   if self.float then
-    utils.register_to_close_on_leave(self.win)
+    view.close_on_leave(self.win)
   end
   self:_cook_winbar()
 end
 
-function Sidepanel:_cook_winbar()
+function MultiWin:_cook_winbar()
   -- TODO: redraw on resize
   local win_width = api.nvim_win_get_width(self.win)
   local join_text_width = 0
@@ -139,12 +104,12 @@ end
 
 function DebugmasterClickWinbar(index)
   -- this code is absolutely cursed, don't want to even speak about this...
-  local self = require("debugmaster.state").sidepanel
+  local self = require("debugmaster.managers.UiManager").sidepanel
   local comp = self.components[index]
   self:set_active(comp)
 end
 
-function Sidepanel:close()
+function MultiWin:close()
   if self:is_open() then
     -- may fail if trying to close last window
     pcall(api.nvim_win_close, self.win, true)
@@ -153,7 +118,7 @@ end
 
 ---rotate sidebar clockwise
 ---@param step number
-function Sidepanel:rotate(step)
+function MultiWin:rotate(step)
   if not api.nvim_win_is_valid(self.win) or self.float then
     return
   end
@@ -178,7 +143,7 @@ function math.clamp(n, low, high)
   return math.min(math.max(n, low), high)
 end
 
-function Sidepanel:resize(step)
+function MultiWin:resize(step)
   if self.float or not self:is_open() then
     return
   end
@@ -187,7 +152,7 @@ function Sidepanel:resize(step)
   self:open()
 end
 
-function Sidepanel:toggle_layout()
+function MultiWin:toggle_layout()
   if not self:is_open() then
     self:open()
   end
@@ -195,8 +160,8 @@ function Sidepanel:toggle_layout()
   self:open({ float = not self.float })
 end
 
----@param comp dm.ui.Sidepanel.IComponent
-function Sidepanel:set_active(comp)
+---@param comp dm.ui.MultiWinComp
+function MultiWin:set_active(comp)
   self.active = comp
   if self:is_open() then
     api.nvim_win_set_buf(self.win, self.active.buf)
@@ -206,8 +171,8 @@ end
 
 -- if this comp already active then it do nothing
 -- set comp as active and open panel if it is closed
----@param comp dm.ui.Sidepanel.IComponent
-function Sidepanel:set_active_with_open(comp)
+---@param comp dm.ui.MultiWinComp
+function MultiWin:set_active_with_open(comp)
   if self.active == comp and self:is_open() then
     return
   end
@@ -215,9 +180,46 @@ function Sidepanel:set_active_with_open(comp)
   self:open()
 end
 
----@param comp dm.ui.Sidepanel.IComponent
-function Sidepanel:add_component(comp)
+---@param comp dm.ui.MultiWinComp
+function MultiWin:add_component(comp)
   table.insert(self.components, comp)
 end
 
-return Sidepanel
+local multiwin = {}
+
+function multiwin.new()
+  ---@class dm.ui.MultiWin
+  local self = setmetatable({}, { __index = MultiWin })
+  self.win = -1 -- always need to check if valid before doing something
+  self.direction = "right"
+  self.float = false
+  self.size = 50 -- size for the split. not applied to float. always in the range [10;90]
+
+  ---@type dm.ui.MultiWinComp[]
+  self.components = {}
+  ---@type dm.ui.MultiWinComp
+  self.active = nil
+
+  api.nvim_create_autocmd("User", {
+    pattern = "WidgetBufferNumberChanged",
+    callback = vim.schedule_wrap(function()
+      if self.active and self:is_open() then
+        api.nvim_win_set_buf(self.win, self.active.buf)
+        self:_cook_winbar()
+      end
+    end)
+  })
+
+  api.nvim_create_autocmd("VimResized", {
+    callback = function()
+      if self:is_open() then
+        self:close()
+        self:open()
+      end
+    end
+  })
+
+  return self
+end
+
+return multiwin
