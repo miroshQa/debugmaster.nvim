@@ -36,13 +36,17 @@ scopes.types_to_hl_group = {
 ---@param node dm.ScopesTreeNode
 ---@type dm.NodeRenderer
 function scopes.render_node(node, depth)
+  local icon = node.expanded and " " or " "
+  if not node.variablesReference or node.variablesReference <= 0 then
+    icon = ""
+  end
   if node.kind == "scope" then
-    return { { node.name } }
+    return { { icon }, { node.name } }
   elseif node.kind == "root" then
     return { { "Scopes:", "WarningMsg" }, { " Expand node - <CR>" }, { " K - inspect node" } }
   elseif node.kind == "var" then
-    local indent = string.rep("  ", depth)
-    return { { indent }, { node.name, "Exception" }, { " = " }, { node.value, scopes.types_to_hl_group[node.type] } }
+    local indent = string.rep(" ", depth)
+    return { { indent }, { icon }, { node.name, "Exception" }, { " = " }, { node.value, scopes.types_to_hl_group[node.type] } }
   end
 end
 
@@ -257,12 +261,14 @@ scopes.comp = (function()
     expanded = true,
   }, { renderer = scopes.render_node, handlers = scopes.handlers })
 
-  after.event_stopped[id] = function()
+
+  after.stackTrace[id] = function()
     local s = dap.session()
     if not s or not s.current_frame then
       return
     end
     scopes.fetch_frame(s, s.current_frame, function(to)
+      to.children[1].expanded = true
       if not tr.root.children then -- first init
         tr.root.children = { to }
         tr:refresh()
