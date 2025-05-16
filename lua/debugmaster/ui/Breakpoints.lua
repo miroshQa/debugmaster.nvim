@@ -50,7 +50,7 @@ function BreakpointNode:get_repr()
     local vlines = nil
     local indent = "    "
     local linenr = self.bpoint.line
-    local line = vim.trim(api.nvim_buf_get_lines(self.bpoint.buf, linenr - 1, linenr, false)[1])
+    local line = vim.trim(api.nvim_buf_get_lines(self.bpoint.buf, linenr - 1, linenr, false)[1] or "")
     local text = string.format("%s %s %s", indent, linenr, line)
     local condition = self.bpoint.condition
     if condition and condition ~= "" then
