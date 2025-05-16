@@ -56,7 +56,6 @@ function scopes.load_variables(s, target, cb)
   s:request("variables", req, function(err, result)
     target.children = {}
     target.child_by_name = {}
-    target.expanded = true
     -- NOTE: should consider deep copy?
     ---@type dm.VariablesNode[]
     local vars = result.variables
@@ -88,6 +87,34 @@ end
 --   end)
 -- end
 
+---Loads all scopes. Return frame  on done via cb
+---@param s dap.Session
+---@param frame dap.StackFrame
+---@param cb fun(root: dm.StackFrameNode)
+function scopes.fetch_frame(s, frame, cb)
+  ---@type dm.StackFrameNode
+  local root = { kind = "frame", children = {}, expanded = true, child_by_name = {} }
+  ---@param err any
+  ---@param result dap.ScopesResponse
+  s:request("scopes", { frameId = frame.id }, function(err, result)
+    ---@type dm.ScopesNode[]
+    local scp = result.scopes
+    local await_count = #scp
+    for _, scope in ipairs(scp) do
+      scope.kind = "scope"
+      scope.children = {}
+      table.insert(root.children, scope)
+      root.child_by_name[scope.name] = scope
+      scopes.load_variables(s, scope, function()
+        await_count = await_count - 1
+        if await_count == 0 then
+          cb(root)
+        end
+      end)
+    end
+  end)
+end
+
 ---@param s dap.Session
 ---@param from dm.ScopesNode | dm.VariablesNode
 ---@param to dm.ScopesNode | dm.VariablesNode
@@ -114,7 +141,7 @@ function scopes.sync_variables(s, from, to, cb)
       if child_from then
         scopes.sync_variables(s, child_from, child_to, function()
           await_count = await_count - 1
-          if await_count == 0 then
+          if await_count == 0 and not cb_called then
             cb()
             cb_called = true
           end
@@ -129,63 +156,35 @@ function scopes.sync_variables(s, from, to, cb)
   end)
 end
 
----Loads all scopes. Return frame  on done via cb
----@param s dap.Session
----@param frame dap.StackFrame
----@param cb fun(root: dm.StackFrameNode)
-function scopes.fetch_frame(s, frame, cb)
-  ---@type dm.StackFrameNode
-  local root = { kind = "frame", children = {}, expanded = true, child_by_name = {} }
-  ---@param err any
-  ---@param result dap.ScopesResponse
-  s:request("scopes", { frameId = frame.id }, function(err, result)
-    ---@type dm.ScopesNode[]
-    local scp = result.scopes
-    local await_count = #scp
-    for _, scope in ipairs(scp) do
-      scope.kind = "scope"
-      scope.children = {}
-      scope.expanded = true
-      table.insert(root.children, scope)
-      root.child_by_name[scope.name] = scope
-      scopes.load_variables(s, scope, function()
-        await_count = await_count - 1
-        if await_count == 0 then
-          cb(root)
-        end
-      end)
-    end
-  end)
-end
-
 ---@param s dap.Session
 ---@param from dm.StackFrameNode
 ---@param to dm.StackFrameNode
 ---@param cb fun() on done
 function scopes.sync_frame(s, from, to, cb)
   local await_count = 0
-  local called = false
-  for _, scope in ipairs(to.children) do
-    if from.child_by_name[scope.name] then
+  local cb_called = false
+  for _, to_scope in ipairs(to.children) do
+    if from.child_by_name[to_scope.name] then
       await_count = await_count + 1
     end
   end
 
   for _, to_scope in ipairs(to.children) do
     local from_scope = from.child_by_name[to_scope.name]
-    to_scope.expanded = from_scope.expanded
-    scopes.sync_variables(s, from_scope, to_scope, function()
-      await_count = await_count - 1
-      if await_count == 0 then
-        cb()
-        called = true
-      end
-    end)
+    if from_scope then
+      scopes.sync_variables(s, from_scope, to_scope, function()
+        await_count = await_count - 1
+        if await_count == 0 and not cb_called then
+          cb()
+          cb_called = true
+        end
+      end)
+    end
   end
 
-  if await_count == 0 and not called then
+  if await_count == 0 and not cb_called then
     cb()
-    called = true
+    cb_called = true
   end
 end
 
@@ -197,11 +196,9 @@ scopes.handlers = {
   {
     key = "<CR>",
     action = function(cur, tr)
-      if cur.children then
-        cur.expanded = not cur.expanded
-      end
       local s = dap.session()
-      if s and not cur.children then
+      cur.expanded = not cur.expanded
+      if s and cur.variablesReference > 0 and not cur.children then
         scopes.load_variables(s, cur, function()
           print("resolving reference")
           tr:refresh()
