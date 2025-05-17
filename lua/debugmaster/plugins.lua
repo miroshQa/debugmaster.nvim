@@ -1,4 +1,5 @@
 local api = vim.api
+local SessionManager = require("debugmaster.managers.SessionsManager")
 local M = {}
 
 local plugins = {}
@@ -71,17 +72,11 @@ plugins.ui_auto_toggle = (function()
 end)()
 
 ---@type dm.Plugin
-plugins.dap_float_close_on_q = {
-  activate = function()
-    api.nvim_command 'autocmd FileType dap-float nnoremap <buffer><silent> q <cmd>close!<CR>'
-  end,
-}
-
----@type dm.Plugin
 plugins.osv_integration = {
   enabled = false,
   activate = function()
     local dap = require("dap")
+    local instance_n = 1
     dap.adapters.debugmasterosv = (function()
       local id = "nvimdebug"
       local buf = -1
@@ -120,10 +115,12 @@ plugins.osv_integration = {
         )
         vim.cmd(cmd)
         buf = vim.api.nvim_get_current_buf()
+        api.nvim_buf_set_name(buf, "nvim-debug-" .. instance_n)
+        instance_n = instance_n + 1
         vim.api.nvim_win_close(0, true)
         dap.listeners.after.initialize[id] = function()
           local ui = require("debugmaster.managers.UiManager")
-          ui.terminal.attach_terminal_to_current_session(buf)
+          SessionManager.attach_term(buf)
           ui.sidepanel:set_active(ui.terminal)
           dap.listeners.after.initialize[id] = nil
         end
@@ -139,6 +136,41 @@ plugins.osv_integration = {
     })
   end
 }
+
+plugins.breakpoint_indicators = (function()
+  local ns = api.nvim_create_namespace("breakpoints")
+  local plugin = {
+    activate = function()
+      api.nvim_create_autocmd("User", {
+        pattern = "DmBpChanged",
+        callback = function()
+          -- https://github.com/neovim/neovim/issues/34025
+          -- why is this api so shit WTF
+          vim.diagnostic.reset(ns)
+          local bps = SessionManager.list_breakpoints()
+          ---@type table<number, vim.Diagnostic[]>
+          local diagnostics = {}
+          for _, bp in ipairs(bps) do
+            diagnostics[bp.buf] = diagnostics[bp.buf] or {}
+            ---@type vim.Diagnostic
+            local d = {
+              lnum = bp.line - 1,
+              col = 0,
+              message = "breakpoint",
+              severity = "INFO",
+            }
+            table.insert(diagnostics[bp.buf], d)
+          end
+          for buf, diagnostic in pairs(diagnostics) do
+            vim.diagnostic.set(ns, buf, diagnostic)
+          end
+        end
+      })
+    end
+  }
+  return plugin
+end)()
+
 
 local plugins_enabled = false
 M.init = function()

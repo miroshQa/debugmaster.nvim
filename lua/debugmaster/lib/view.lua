@@ -1,6 +1,9 @@
 local view = {}
 local api = vim.api
+local utils = require("debugmaster.lib.utils")
 
+---@param buf number
+---@return integer win
 function view.new_float_anchored(buf)
   local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
   local width = 1
@@ -41,17 +44,38 @@ function view.make_centered_float_cfg()
   return cfg
 end
 
+--- basically sets buffer local keymap
+-- and that most important it sets window local keymap!!
+---@param win any
+---@return number win
+function view.close_on_q(win)
+  utils.set_local_buf_win_keymap(win, "q", "n", function()
+    vim.cmd("q")
+  end)
+  return win
+end
+
+view.popup = {}
+---@param params {buf: number?}
+---@return number win
+function view.popup.new(params)
+  local buf = params.buf or api.nvim_create_buf(false, true)
+  local win = view.close_on_q(view.close_on_leave(view.new_float_anchored(buf)))
+  return win
+end
+
 ---@param win number
+---@return number win
 function view.close_on_leave(win)
-  local id
-  id = api.nvim_create_autocmd("WinLeave", {
+  api.nvim_create_autocmd("WinLeave", {
     callback = function()
       if api.nvim_win_is_valid(win) then
         api.nvim_win_close(win, true)
       end
-      api.nvim_del_autocmd(id)
+      return true
     end
   })
+  return win
 end
 
 return view

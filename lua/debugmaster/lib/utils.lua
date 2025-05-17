@@ -1,0 +1,65 @@
+local api = vim.api
+
+local utils = {}
+
+-- https://www.reddit.com/r/neovim/comments/tz6p7i/how_can_we_set_color_for_each_part_of_statusline/
+---@return string
+function utils.status_line_apply_hl(str, hlGroup)
+  return "%#" .. hlGroup .. "#" .. str .. "%*"
+end
+
+function utils.get_windows_for_buffer(buf)
+  local windows = {}
+  for _, win in ipairs(api.nvim_list_wins()) do
+    if api.nvim_win_get_buf(win) == buf then
+      table.insert(windows, win)
+    end
+  end
+  return windows
+end
+
+do
+  local f = io.open(vim.fs.joinpath(vim.fn.stdpath("config"), "log.md"), "w+")
+  local count = 1
+
+  utils.log = function(message, obj)
+    count = count + 1
+    f:write(string.format("[%s]: %s\n", tostring(count), message))
+    f:write("```lua\n")
+    f:write(vim.inspect(obj))
+    f:write("\n")
+    f:write("\n```\n")
+  end
+end
+
+---@param buf number
+---@param mode string
+---@param key string
+---@return vim.api.keyset.get_keymap?
+function utils.get_local_keymap(buf, mode, key)
+  for _, spec in ipairs(api.nvim_buf_get_keymap(buf, mode)) do
+    if spec.lhs == key then
+      return spec
+    end
+  end
+end
+
+---Set window local keymap for the current buffer.
+-- It will work only when this buffer openned in this window
+---@param win number
+---@param key string
+---@param mode string
+---@param callback fun()
+function utils.set_local_buf_win_keymap(win, key, mode, callback)
+  local buf = api.nvim_win_get_buf(win)
+  local old = utils.get_local_keymap(buf, "n", "q")
+  vim.keymap.set(mode, key, function()
+    if api.nvim_get_current_win() == win then
+      callback()
+    elseif old and old.callback then
+      old.callback()
+    end
+  end, { buffer = buf })
+end
+
+return utils

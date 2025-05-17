@@ -39,12 +39,4 @@ function help.construct(groups)
   return buf
 end
 
-help.comp = (function()
-  return {
-    name = "[H]elp",
-    buf = help.construct(require("debugmaster.managers.DmManager").get_groups())
-  }
-end)()
-
-
 return help

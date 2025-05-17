@@ -1,5 +1,5 @@
-local utils = require("debugmaster.utils")
-local view = require("debugmaster.components.generic.view")
+local utils = require("debugmaster.lib.utils")
+local view = require("debugmaster.lib.view")
 local api = vim.api
 
 ---@class dm.ui.MultiWinComp

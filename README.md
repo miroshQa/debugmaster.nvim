@@ -15,6 +15,7 @@ The goals of this plugin:
 ## ⚡️Requirements  
 - Neovim >= 0.10 (>= 0.11 is recommended)  
 - nvim-dap  
+- nerd-fonts
 
 ## Features
 - Multiple sessiosn support

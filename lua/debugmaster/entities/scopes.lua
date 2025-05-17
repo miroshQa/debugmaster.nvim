@@ -1,7 +1,8 @@
 local dap = require("dap")
-local view = require("debugmaster.components.generic.view")
-local log = require("debugmaster.utils").log
-local log_clear = require("debugmaster.utils").log_clear
+local view = require("debugmaster.lib.view")
+local log = require("debugmaster.lib.utils").log
+local tree = require("debugmaster.lib.tree")
+local dispatcher = tree.dispatcher
 
 local scopes = {}
 
@@ -9,13 +10,13 @@ local scopes = {}
 ---@class dm.ScopesNode: dap.Scope
 ---@field kind "scope"
 ---@field children dm.VariablesNode[]? no children means not loaded
----@field expanded boolean
+---@field collapsed boolean
 ---@field child_by_name table<string, dm.VariablesNode>
 
 ---@class dm.VariablesNode: dap.Variable
 ---@field kind "var"
 ---@field children dm.VariablesNode[]? no children means not loaded
----@field expanded boolean
+---@field collapsed boolean
 ---@field child_by_name table<string, dm.VariablesNode>
 
 ---@alias dm.ScopesRoot {kind: "root", children: dm.StackFrameNode[], expanded: true}
@@ -33,22 +34,32 @@ scopes.types_to_hl_group = {
   ["function"] = "Function",
 }
 
----@param node dm.ScopesTreeNode
----@type dm.NodeRenderer
-function scopes.render_node(node, depth)
-  local icon = node.expanded and " " or " "
-  if not node.variablesReference or node.variablesReference <= 0 then
-    icon = ""
+scopes.renderer = dispatcher.renderer.new {
+  ---@param node dm.ScopesRoot
+  root = function(node, depth, parent)
+    return {
+      { { "Scopes:", "WarningMsg" }, },
+      { { " Expand node - <CR>" },   { " K - inspect node" } }
+    }
+  end,
+  ---@param node dm.ScopesNode
+  scope = function(node, depth, parent)
+    local icon = node.collapsed and " " or " "
+    icon = node.variablesReference == 0 and "" or icon
+    return {
+      { { icon }, { node.name } },
+    }
+  end,
+  ---@param node dm.VariablesNode
+  var = function(node, depth, parent)
+    local icon = node.collapsed and " " or " "
+    icon = node.variablesReference == 0 and "" or icon
+    local indent = string.rep("  ", depth)
+    return {
+      { { indent }, { icon }, { node.name, "Exception" }, { " = " }, { node.value, scopes.types_to_hl_group[node.type] } }
+    }
   end
-  if node.kind == "scope" then
-    return { { icon }, { node.name } }
-  elseif node.kind == "root" then
-    return { { "Scopes:", "WarningMsg" }, { " Expand node - <CR>" }, { " K - inspect node" } }
-  elseif node.kind == "var" then
-    local indent = string.rep(" ", depth)
-    return { { indent }, { icon }, { node.name, "Exception" }, { " = " }, { node.value, scopes.types_to_hl_group[node.type] } }
-  end
-end
+}
 
 ---Load varialles. Erase all previous children. Cb called on done. Set expanded = true
 ---@param s dap.Session
@@ -126,7 +137,7 @@ end
 ---Resolve all refrences variables refrences for nodes if children exist
 function scopes.sync_variables(s, from, to, cb)
   assert(from.name == to.name, string.format("from.name: %s ~= to.name: %s", from.name, to.name))
-  to.expanded = from.expanded
+  to.collapsed = from.collapsed
   if not from.children then
     return cb()
   end
@@ -192,103 +203,48 @@ function scopes.sync_frame(s, from, to, cb)
   end
 end
 
----@class dm.ScopesTreeNodeHandler: dm.TreeNodeHandler
----@field action fun(cur: dm.ScopesTreeNode, tr: dm.Tree)
-
----@type dm.ScopesTreeNodeHandler[]
+---@type table<string, dm.TreeNodeAction>
 scopes.handlers = {
-  {
-    key = "<CR>",
-    action = function(cur, tr)
+  ["<CR>"] = dispatcher.action.new {
+    ---@type fun(cur: dm.ScopesNode | dm.VariablesNode, tr: dm.Tree)
+    scope = function(cur, tr)
       local s = dap.session()
-      cur.expanded = not cur.expanded
+      cur.collapsed = not cur.collapsed
       if s and cur.variablesReference > 0 and not cur.children then
         scopes.load_variables(s, cur, function()
+          cur.collapsed = false
           print("resolving reference")
           tr:refresh()
         end)
       else
         tr:refresh()
       end
-    end
+    end,
+    var = "scope"
   },
-  {
-    key = "r",
-    action = function(cur, tr)
-      if cur.children then
-        cur.expanded = not cur.expanded
-      end
-      local s = dap.session()
-      if s and not cur.children then
-        scopes.resolve_variables_recursive(s, cur, function()
-          tr:refresh()
-        end)
-      else
-        tr:refresh()
-      end
+  ["r"] = function(cur, tr)
+    if cur.children then
+      cur.collapsed = not cur.collapsed
     end
-  },
-  {
-    key = "K",
-    action = function(cur)
-      local b = vim.api.nvim_create_buf(false, true)
-      vim.keymap.set("n", "q", function()
-        vim.cmd("q")
-      end, { buffer = b })
-      vim.bo[b].filetype = "lua"
-      vim.api.nvim_buf_set_lines(b, 0, -1, false, vim.split(vim.inspect(cur), "\n"))
-      view.new_float_anchored(b)
-      cur.expanded = not cur.expanded
-    end
-  },
-  {
-    key = "s",
-    action = function(cur, tr)
-      vim.print(tr.snapshot.stats[cur])
-    end
-  }
-}
-
-scopes.comp = (function()
-  local tree = require("debugmaster.components.generic.tree")
-  local after = dap.listeners.after
-  local before = dap.listeners.after
-  local id = "debugmaster"
-
-  local tr = tree.new({
-    kind = "root",
-    children = nil,
-    expanded = true,
-  }, { renderer = scopes.render_node, handlers = scopes.handlers })
-
-
-  after.stackTrace[id] = function()
     local s = dap.session()
-    if not s or not s.current_frame then
-      return
-    end
-    scopes.fetch_frame(s, s.current_frame, function(to)
-      to.children[1].expanded = true
-      if not tr.root.children then -- first init
-        tr.root.children = { to }
-        tr:refresh()
-        return
-      end
-      local from = tr.root.children[1]
-      log("from", from)
-      log("to", to)
-      scopes.sync_frame(s, from, to, function()
-        log("to result ", to)
-        tr.root.children = { to }
+    if s and not cur.children then
+      scopes.resolve_variables_recursive(s, cur, function()
         tr:refresh()
       end)
-    end)
-  end
-
-  return {
-    name = "[S]copes",
-    buf = tr.buf,
-  }
-end)()
+    else
+      tr:refresh()
+    end
+  end,
+  ["K"] = function(cur)
+    local b = vim.api.nvim_create_buf(false, true)
+    vim.bo[b].filetype = "lua"
+    vim.api.nvim_buf_set_lines(b, 0, -1, false, vim.split(vim.inspect(cur), "\n"))
+    view.popup.new { buf = b }
+    cur.collapsed = not cur.collapsed
+  end,
+  ["s"] = function(cur, tr)
+    vim.print(tr.snapshot.stats[cur])
+  end,
+}
 
 return scopes

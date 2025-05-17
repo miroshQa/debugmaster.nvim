@@ -11,17 +11,17 @@ M.mode = {
     require("debugmaster.managers.UiManager")
     require("debugmaster.managers.SessionsManager")
     require("debugmaster.plugins").init()
-    require("debugmaster.managers.DmManager").toggle()
+    require("debugmaster.managers.DmManager").dmode:toggle()
   end,
   disable = function()
-    require("debugmaster.managers.DmManager").disable()
+    require("debugmaster.managers.DmManager").dmode:disable()
   end
 }
 
 M.keys = {
   ---Give the reference to the key entry so you can remap it to something else
   ---Throws an error if the key doesn't exist
-  ---@return dm.KeySpec
+  ---@return dm.MappingSpec
   get = function(key)
     local groups = require("debugmaster.managers.DmManager").get_groups()
     for _, group in pairs(groups) do
@@ -34,7 +34,7 @@ M.keys = {
     error("Key doesn't exist")
   end,
   --- Add new user mapping to the last group
-  ---@param mapping dm.KeySpec
+  ---@param mapping dm.MappingSpec
   add = function(mapping)
     local groups = require("debugmaster.managers.DmManager").get_groups()
     table.insert(groups[#groups].mappings, mapping)

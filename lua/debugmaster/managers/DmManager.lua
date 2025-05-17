@@ -1,59 +1,54 @@
 local api = vim.api
-local view = require("debugmaster.components.generic.view")
-local tree = require("debugmaster.components.generic.tree")
+local view = require("debugmaster.lib.view")
+local tree = require("debugmaster.lib.tree")
+local dap = require("dap")
+local utils = require("debugmaster.lib.utils")
+local submodes = require("debugmaster.lib.submodes")
+local SessionsManager = require("debugmaster.managers.SessionsManager")
+-- local UiManager = require("debugmaster.managers.UiManager")
 
 ---Debug Mode Manager
 local DmManager = {}
 
---- [[DEFAULT KEYMAPS]]
-
----@class dm.KeySpec
+---@class dm.MappingSpec
 ---@field key string
+---@field desc string
 ---@field action fun()
----@field desc string?
----@field nowait boolean?
----@field group string?
----@field modes table | nil Table with modes like in vim.keymap.set. {"n"} by default
-
 
 ---@class dm.MappingsGroup
 ---@field name string? Group name. Not shown in HelpPopup if nil
 ---@field hlgroup string? Define name highlight color in HelpPopup
----@field mappings dm.KeySpec[]
+---@field mappings dm.MappingSpec[]
+
 
 ---@type dm.MappingsGroup
 local move_debugger = {
   name = "MOVE DEBUGGER",
   hlgroup = "ERROR",
-  -- the main goal when developing keymaps for debug mode is to not override normal mode motions
-  -- We want to our DEBUG mode be "constant". So we can freely move and can't edit text
   mappings = {
     {
       key = "o",
-      action = function() require("dap").step_over() end,
+      action = dap.step_over,
       desc = "Step over. Works with count (Try to type '5o')",
     },
     {
       key = "m",
-      action = function() require("dap").step_into() end,
+      action = dap.step_into,
       desc = "Step into (mine deeper)",
     },
     {
       key = "q",
-      action = function() require("dap").step_out() end,
+      action = dap.step_out,
       desc = "Step out ([q]uit current stack frame)",
     },
     {
       key = "c",
-      nowait = true,
-      action = function()
-        require("dap").continue()
-      end,
+      action = dap.continue,
       desc = "Continue or start debug session",
     },
     {
       key = "r",
-      action = function() require("dap").run_to_cursor() end,
+      action = dap.run_to_cursor,
       desc = "Run to cursor",
     },
   }
@@ -79,12 +74,20 @@ local sidepanel = {
       desc = "Toggle ui float mode",
     },
     {
+      key = "D",
+      action = function()
+        local UiManager = require("debugmaster.managers.UiManager")
+        UiManager.sidepanel:set_active(UiManager.dashboard)
+      end,
+      desc = "Open dashboard",
+    },
+    {
       key = "S",
       action = function()
         local UiManager = require("debugmaster.managers.UiManager")
         UiManager.sidepanel:set_active_with_open(UiManager.scopes)
       end,
-      desc = "Open scopes (global, local, etc variables)",
+      desc = "Open scopes",
     },
     {
       key = "T",
@@ -153,27 +156,16 @@ local float_widgets = {
     {
       key = "df",
       action = function()
-        local widgets = require("dap.ui.widgets")
-        pcall(widgets.cursor_float, widgets.frames)
-        view.close_on_leave(api.nvim_get_current_win())
+        local UiManager = require("debugmaster.managers.UiManager")
+        view.popup.new { buf = UiManager.threads.buf }
       end,
-      desc = "Frames widget"
-    },
-    {
-      key = "dt",
-      action = function()
-        local widgets = require("dap.ui.widgets")
-        pcall(widgets.cursor_float, widgets.threads)
-        view.close_on_leave(api.nvim_get_current_win())
-      end,
-      desc = "Threads widget"
+      desc = "Frames and threads widget"
     },
     {
       key = "ds",
       action = function()
         local s = require("debugmaster.managers.UiManager").sessions
-        view.new_float_anchored(s.buf)
-        view.close_on_leave(s.buf)
+        view.popup.new { buf = s.buf }
       end,
       desc = "Debug sessions widget",
     },
@@ -181,17 +173,15 @@ local float_widgets = {
       key = "db",
       action = function()
         local b = require("debugmaster.managers.UiManager").breakpoints
-        view.new_float_anchored(b.buf)
-        view.close_on_leave(b.buf)
+        view.popup.new { buf = b.buf }
       end,
       desc = "Breakpoints widget"
     },
     {
       key = "I",
-      modes = { "n", "v" },
       action = function()
         pcall(require('dap.ui.widgets').hover)
-        view.close_on_leave(api.nvim_get_current_win())
+        view.close_on_q(view.close_on_leave(api.nvim_get_current_win()))
       end,
       desc = "Inspect variable or visually selected expression",
     },
@@ -205,7 +195,9 @@ local breakpoings_group = {
   mappings = {
     {
       key = "t",
-      action = function() require("dap").toggle_breakpoint() end,
+      action = function()
+        SessionsManager.toggle_breakpoint()
+      end,
       desc = "Toggle breakpoint",
     },
     {
@@ -221,19 +213,19 @@ local breakpoings_group = {
       action = function()
         local condition = vim.fn.input({ prompt = "Enter breakpoing condition: " })
         if condition ~= "" then
-          require("dap").toggle_breakpoint(condition)
+          SessionsManager.toggle_breakpoint(condition)
         end
       end,
       desc = "Add conditional breakpoint",
     },
     {
       key = "[b",
-      action = function() require("debugmaster.utils").gotoBreakpoint("prev") end,
+      action = function() require("debugmaster.lib.utils").gotoBreakpoint("prev") end,
       desc = "Go to previous breakpoint"
     },
     {
       key = "]b",
-      action = function() require("debugmaster.utils").gotoBreakpoint("next") end,
+      action = function() require("debugmaster.lib.utils").gotoBreakpoint("next") end,
       desc = "Go to next breakpoint"
     },
   },
@@ -259,9 +251,9 @@ local misc_group = {
       desc = "Debug start new sessions",
     },
     {
-      key = "dq",
+      key = "Q",
       action = function()
-        require("dap").terminate()
+        dap.terminate()
         require("debugmaster.managers.UiManager").sidepanel:close()
       end,
       desc = "Quit debug"
@@ -328,101 +320,34 @@ local groups = {
 --- [[DEFAULT KEYMAPS END]]
 
 
-local active = false
-local originals_saving_required = true
+local reload_required = true
 
----@class dm.OrignalKeymap
----@field callback function?
----@field rhs string?
----@field desc string?
----@field silent boolean?
----@type table<string, table<string, dm.OrignalKeymap>> [mode: {key: OriginalKeymap}, ...]
-local originals = {}
-
-local function save_original_keymaps()
-  local all = { n = api.nvim_get_keymap("n"), v = api.nvim_get_keymap("v") }
-  local lhs_to_map = {}
-
-  for mode, mappings in pairs(all) do
-    lhs_to_map[mode] = {}
-    for _, mapping in ipairs(mappings) do
-      lhs_to_map[mode][mapping.lhs] = mapping
-    end
-  end
-
-  for _, group in ipairs(groups) do
-    for _, mapping in ipairs(group.mappings) do
-      for _, mode in ipairs(mapping.modes or { "n" }) do
-        local key = mapping.key
-        if not originals[mode] then
-          originals[mode] = {}
-        end
-        local orig = lhs_to_map[mode][key] or {}
-        originals[mode][key] = {
-          callback = orig.callback,
-          rhs = orig.rhs,
-          desc = orig.desc,
-          silent = orig.silent,
-        }
-      end
-    end
+local mappings = {}
+for _, group in ipairs(groups) do
+  for _, mapping in ipairs(group.mappings) do
+    ---@type dm.lib.Submodes.Mapping
+    local new = {
+      lhs = mapping.key,
+      mode = "n",
+      rhs = "",
+      opts = {
+        callback = mapping.action,
+        desc = mapping.desc,
+      }
+    }
+    table.insert(mappings, new)
   end
 end
 
-function DmManager.enable()
-  if active then
-    return
-  end
-  if originals_saving_required then
-    originals = {}
-    save_original_keymaps()
-    originals_saving_required = false
-  end
-  for _, group in ipairs(groups) do
-    for _, mapping in ipairs(group.mappings) do
-      local action = mapping.action
-      for _, mode in ipairs(mapping.modes or { "n" }) do
-        vim.keymap.set(mode, mapping.key, action, { nowait = mapping.nowait })
-      end
-    end
-  end
-  api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = true } })
-  active = true
-end
-
-function DmManager.disable()
-  if not active then
-    return
-  end
-  active = false
-  for _, group in ipairs(groups) do
-    for _, mapping in ipairs(group.mappings) do
-      local key = mapping.key
-      for _, mode in ipairs(mapping.modes or { "n" }) do
-        local orig = originals[mode][key]
-        local rhs = orig.callback or orig.rhs or key
-        vim.keymap.set(mode, key, rhs, {
-          desc = orig.desc,
-          silent = orig.silent,
-        })
-      end
-    end
-  end
-  api.nvim_exec_autocmds("User", { pattern = "DebugModeChanged", data = { enabled = false } })
-end
-
-function DmManager.toggle()
-  (active and DmManager.disable or DmManager.enable)()
-end
-
-function DmManager.is_active()
-  return active
-end
+DmManager.dmode = submodes.new {
+  name = "Debug",
+  mappings = mappings,
+}
 
 function DmManager.get_groups()
   -- if user required groups he can change keymaps,
   -- hence we should updat originals on next debug mode activate
-  originals_saving_required = true
+  reload_required = true
   return groups
 end
 
