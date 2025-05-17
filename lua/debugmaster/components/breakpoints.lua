@@ -1,6 +1,6 @@
 local api = vim.api
 local bps = require("dap.breakpoints")
-local tree = require("debugmaster.components.generic.tree")
+local tree = require("debugmaster.lib.tree")
 local breakpoints = {}
 
 ---@alias dm.BpContainer {kind: "container", children: dm.Bp[], buf: number, expanded: boolean }
@@ -9,21 +9,23 @@ local breakpoints = {}
 ---@alias dm.BpTreeNode dm.BpContainer | dm.Bp
 
 
----@param node dm.BpTreeNode
-function breakpoints.render_node(node)
-  -- yeah {kind = "a"} or {kind = "b"} notation doesn't work indeed
-  -- Please someone create good lsp server for lua please...
-  if node.kind == "dummy" then
+breakpoints.renderer = tree.renderer.new {
+  ---@param node dm.BpDummyRoot
+  dummy = function(node, depth, parent)
     local help = {
       { { "t - remove breakpoint or all breakpoints in the file", "Comment" } },
       { { "c - change breakpoint condition", "Comment" } }
     }
     return { { "Breakpoints", "Exception" } }, { vlines = help }
-  elseif node.kind == "container" then
+  end,
+  ---@param node dm.BpContainer
+  container = function(node, depth, parent)
     local path = api.nvim_buf_get_name(node.buf)
     path = vim.fn.fnamemodify(path, ":.")
     return { { path, "Statement" } }
-  else
+  end,
+  ---@param node dm.Bp
+  bp = function(node, depth, parent)
     local vlines = nil
     local indent = "    "
     local linenr = node.line
@@ -35,7 +37,7 @@ function breakpoints.render_node(node)
     end
     return { { text } }, vlines
   end
-end
+}
 
 ---comment
 ---@param bps any must be require("dap.breakponts").get()
@@ -119,9 +121,10 @@ breakpoints.handlers = {
 
 
 breakpoints.comp = (function()
-  local bptree = tree.new(
-    breakpoints.build_tree(bps.get()),
-    { renderer = breakpoints.render_node })
+  local bptree = tree.new {
+    root = breakpoints.build_tree(bps.get()),
+    renderer = breakpoints.renderer
+  }
   return {
     name = "[B]points",
     buf = bptree.buf,

@@ -1,5 +1,5 @@
 local dap = require("dap")
-local tree = require("debugmaster.components.generic.tree")
+local tree = require("debugmaster.lib.tree")
 
 local sessions = {}
 
@@ -33,10 +33,10 @@ function sessions.build_tree()
 end
 
 sessions.comp = (function()
-  local sessions_tree = tree.new(
-    sessions.build_tree(),
-    {renderer = sessions.render_node}
-  )
+  local sessions_tree = tree.new {
+    root = sessions.build_tree(),
+    renderer = sessions.render_node
+  }
   return {
     name = "Sessions",
     buf = sessions_tree.buf

@@ -1,7 +1,8 @@
 local dap = require("dap")
-local view = require("debugmaster.components.generic.view")
-local log = require("debugmaster.utils").log
-local log_clear = require("debugmaster.utils").log_clear
+local view = require("debugmaster.lib.view")
+local log = require("debugmaster.lib.utils").log
+local log_clear = require("debugmaster.lib.utils").log_clear
+local tree = require("debugmaster.lib.tree")
 
 local scopes = {}
 
@@ -9,13 +10,13 @@ local scopes = {}
 ---@class dm.ScopesNode: dap.Scope
 ---@field kind "scope"
 ---@field children dm.VariablesNode[]? no children means not loaded
----@field expanded boolean
+---@field collapsed boolean
 ---@field child_by_name table<string, dm.VariablesNode>
 
 ---@class dm.VariablesNode: dap.Variable
 ---@field kind "var"
 ---@field children dm.VariablesNode[]? no children means not loaded
----@field expanded boolean
+---@field collapsed boolean
 ---@field child_by_name table<string, dm.VariablesNode>
 
 ---@alias dm.ScopesRoot {kind: "root", children: dm.StackFrameNode[], expanded: true}
@@ -33,22 +34,23 @@ scopes.types_to_hl_group = {
   ["function"] = "Function",
 }
 
----@param node dm.ScopesTreeNode
----@type dm.NodeRenderer
-function scopes.render_node(node, depth)
-  local icon = node.expanded and " " or " "
-  if not node.variablesReference or node.variablesReference <= 0 then
-    icon = ""
-  end
-  if node.kind == "scope" then
-    return { { icon }, { node.name } }
-  elseif node.kind == "root" then
+scopes.renderer = tree.renderer.new {
+  ---@param node dm.ScopesRoot
+  root = function(node, depth, parent)
     return { { "Scopes:", "WarningMsg" }, { " Expand node - <CR>" }, { " K - inspect node" } }
-  elseif node.kind == "var" then
+  end,
+  ---@param node dm.ScopesNode
+  scope = function(node, depth, parent)
+    local icon = node.collapsed and " " or " "
+    return { { icon }, { node.name } }
+  end,
+  ---@param node dm.VariablesNode
+  var = function(node, depth, parent)
+    local icon = node.collapsed and " " or " "
     local indent = string.rep(" ", depth)
     return { { indent }, { icon }, { node.name, "Exception" }, { " = " }, { node.value, scopes.types_to_hl_group[node.type] } }
   end
-end
+}
 
 ---Load varialles. Erase all previous children. Cb called on done. Set expanded = true
 ---@param s dap.Session
@@ -126,7 +128,7 @@ end
 ---Resolve all refrences variables refrences for nodes if children exist
 function scopes.sync_variables(s, from, to, cb)
   assert(from.name == to.name, string.format("from.name: %s ~= to.name: %s", from.name, to.name))
-  to.expanded = from.expanded
+  to.collapsed = from.collapsed
   if not from.children then
     return cb()
   end
@@ -201,9 +203,10 @@ scopes.handlers = {
     key = "<CR>",
     action = function(cur, tr)
       local s = dap.session()
-      cur.expanded = not cur.expanded
+      cur.collapsed = not cur.collapsed
       if s and cur.variablesReference > 0 and not cur.children then
         scopes.load_variables(s, cur, function()
+          cur.collapsed = false
           print("resolving reference")
           tr:refresh()
         end)
@@ -216,7 +219,7 @@ scopes.handlers = {
     key = "r",
     action = function(cur, tr)
       if cur.children then
-        cur.expanded = not cur.expanded
+        cur.collapsed = not cur.collapsed
       end
       local s = dap.session()
       if s and not cur.children then
@@ -238,7 +241,7 @@ scopes.handlers = {
       vim.bo[b].filetype = "lua"
       vim.api.nvim_buf_set_lines(b, 0, -1, false, vim.split(vim.inspect(cur), "\n"))
       view.new_float_anchored(b)
-      cur.expanded = not cur.expanded
+      cur.collapsed = not cur.collapsed
     end
   },
   {
@@ -250,16 +253,15 @@ scopes.handlers = {
 }
 
 scopes.comp = (function()
-  local tree = require("debugmaster.components.generic.tree")
   local after = dap.listeners.after
   local before = dap.listeners.after
   local id = "debugmaster"
 
-  local tr = tree.new({
-    kind = "root",
-    children = nil,
-    expanded = true,
-  }, { renderer = scopes.render_node, handlers = scopes.handlers })
+  local tr = tree.new {
+    root = { kind = "root", children = nil },
+    renderer = scopes.renderer,
+    handlers = scopes.handlers,
+  }
 
 
   after.stackTrace[id] = function()
@@ -268,7 +270,6 @@ scopes.comp = (function()
       return
     end
     scopes.fetch_frame(s, s.current_frame, function(to)
-      to.children[1].expanded = true
       if not tr.root.children then -- first init
         tr.root.children = { to }
         tr:refresh()

@@ -1,9 +1,10 @@
 local UiManager = {}
 
-UiManager.sidepanel = require("debugmaster.components.generic.multiwin").new()
+UiManager.sidepanel = require("debugmaster.components.multiwin").new()
 UiManager.breakpoints = require("debugmaster.components.breakpoints").comp
 -- UiManager.sessions = require("debugmaster.components.sessions").comp
 UiManager.terminal = require("debugmaster.components.terminal").comp
+UiManager.threads = require("debugmaster.components.threads").comp
 UiManager.scopes = require("debugmaster.components.scopes").comp
 UiManager.repl = require("debugmaster.components.repl").comp
 UiManager.help = require("debugmaster.components.help").comp

@@ -1,5 +1,6 @@
 local view = {}
 local api = vim.api
+local utils = require("debugmaster.lib.utils")
 
 function view.new_float_anchored(buf)
   local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
@@ -41,17 +42,36 @@ function view.make_centered_float_cfg()
   return cfg
 end
 
+--- basically sets buffer local keymap
+-- and that most important it sets window local keymap!!
+--- TOOD: make it generic. 
+---@param win any
+---@return number win
+function view.close_on_q(win)
+  local buf = api.nvim_win_get_buf(win)
+  local old = utils.get_local_keymap(buf, "n", "q")
+  vim.keymap.set("n", "q", function()
+    if api.nvim_get_current_win() == win then
+      vim.cmd("q")
+    elseif old and old.callback then
+      old.callback()
+    end
+  end, {buffer = buf})
+  return win
+end
+
 ---@param win number
+---@return number win
 function view.close_on_leave(win)
-  local id
-  id = api.nvim_create_autocmd("WinLeave", {
+  api.nvim_create_autocmd("WinLeave", {
     callback = function()
       if api.nvim_win_is_valid(win) then
         api.nvim_win_close(win, true)
       end
-      api.nvim_del_autocmd(id)
+      return true
     end
   })
+  return win
 end
 
 return view

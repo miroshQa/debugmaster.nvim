@@ -12,7 +12,7 @@ local tree = {}
 ---@field vlines dm.HlLine?
 
 ---@class dm.TreeNode
----@field expanded boolean?
+---@field collapsed boolean?
 ---@field children dm.TreeNode[]?
 
 ---@class dm.NodeRenderStat
@@ -23,7 +23,7 @@ local tree = {}
 ---@field root dm.TreeNode
 ---@field len number
 ---@field buf number
----@field nodes_by_line table<number, dm.TreeNode>
+---@field nodes_by_line table<number, dm.TreeNode> Starts with 1!
 ---@field stats table<dm.TreeNode, dm.NodeRenderStat>
 local SnapshotMethods = {}
 ---@private
@@ -37,7 +37,7 @@ SnapshotMethods.__index = SnapshotMethods
 ---and get rid of this snapshot if it happened
 function SnapshotMethods:cur()
   assert(self.buf == api.nvim_win_get_buf(0), "current window buf must match snapshot buf!")
-  local line = api.nvim_win_get_cursor(0)[1] - 1
+  local line = api.nvim_win_get_cursor(0)[1]
   local cur = self.nodes_by_line[line]
   assert(cur, "No node under cursor! This could only happen if buffer was modified since render!")
   return cur
@@ -52,9 +52,11 @@ end
 ---@field renderer dm.NodeRenderer
 
 ---Render tree like structure conforming to the
----dm.TreeNode interface. Each node can contains expanded and children field
+---dm.TreeNode interface. Each node can contains children and collapsed fields
 ---interface (contract) doesn't require them to present
 ---in this case children are simply not rendered
+---By default use tree.iter. It traverse all nodes if it has children. You can prevent node for
+---being traversed by setting collapsed = true
 ---Returns the render snapshot, that can be used to retrieve node by line, etc
 ---@param opts dm.TreeRenderParams
 ---@return dm.TreeRenderSnapshot
@@ -64,7 +66,7 @@ function tree.render(opts)
   local highlights = {}
   ---@type {line: number, lines: dm.HlLine[]}
   local virt_line_marks = {}
-  local line_num = 0
+  local line_num = 1
   local nodes_by_line = {}
   ---@type table<dm.TreeNode, dm.NodeRenderStat>
   local stats = {}
@@ -110,14 +112,14 @@ function tree.render(opts)
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   api.nvim_set_option_value("modifiable", false, { buf = opts.buf })
   for _, h in ipairs(highlights) do
-    api.nvim_buf_set_extmark(buf, ns_id, h.line, h.col_start, {
+    api.nvim_buf_set_extmark(buf, ns_id, h.line - 1, h.col_start, {
       end_col = h.col_end,
       hl_group = h.hl
     })
   end
 
   for _, mark in ipairs(virt_line_marks) do
-    api.nvim_buf_set_extmark(buf, ns_id, mark.line, 0, {
+    api.nvim_buf_set_extmark(buf, ns_id, mark.line - 1, 0, {
       virt_lines = mark.lines,
       virt_lines_above = false,
     })
@@ -137,16 +139,15 @@ end
 ---parent must be nil only for a root element. Depth starts with 0
 ---@alias dm.TreeIterator fun(): cur: dm.TreeNode, depth: number, parent: dm.TreeNode?
 
----contrstruct iterator over tree like structure
+---construct iterator over tree like structure
 ---@param root dm.TreeNode Iteration starts with this node
----@param predicate (fun(dm.TreeNode): boolean)? Predicate to control if children should be traversed. By default traverse if cur.expanded = true. Don't traverse children if is children = nil, this can't be changed by predicate
 ---@return dm.TreeIterator
-function tree.iter(root, predicate)
+function tree.iter(root)
   return coroutine.wrap(function()
     ---@type fun(cur: dm.TreeNode, depth: number, parent: dm.TreeNode?)
     local function traverse(cur, depth, parent)
       coroutine.yield(cur, depth, parent)
-      local should_traverse_children = cur.children and (predicate and predicate(cur) or cur.expanded)
+      local should_traverse_children = cur.children and not cur.collapsed
       if should_traverse_children then
         for _, child in ipairs(cur.children) do
           traverse(child, depth + 1, cur)
@@ -183,15 +184,16 @@ end
 ---@field action fun(cur: dm.TreeNode, tr: dm.Tree)
 
 ---@class dm.NewTreeParams
+---@field root dm.TreeNode
 ---@field renderer dm.NodeRenderer
 ---@field handlers? dm.TreeNodeHandler[]
 
 ---Return more highlevel primitive than TreeSnapshot. You can live without it
 ---Implicitly creates tree snapshot
----@param root dm.TreeNode
 ---@param params dm.NewTreeParams
 ---@return dm.Tree
-function tree.new(root, params)
+function tree.new(params)
+  local root = params.root
   local buf = vim.api.nvim_create_buf(false, true)
   local renderer = params.renderer
   local self = setmetatable({
@@ -211,5 +213,30 @@ function tree.new(root, params)
   end
   return self
 end
+
+---@class dm.NodeWithKind: dm.TreeNode
+---@field kind string
+
+tree.renderer = {}
+---@param dispatchers table<string, dm.NodeRenderer>
+---@return dm.NodeRenderer
+function tree.renderer.new(dispatchers)
+  ---@type dm.NodeRenderer
+  ---@param node  dm.NodeWithKind
+  return function(node, depth, parent)
+    assert(node.kind, "node must have kind!")
+    local dispatcher = dispatchers[node.kind]
+    dispatcher(node, depth, parent)
+  end
+end
+
+tree.handler = {}
+---@param dispatchers table<string, dm.TreeNodeHandler>
+---@return dm.TreeNodeHandler
+function tree.handler.new(dispatchers)
+end
+
+-- Despite lua_ls lacks generic classes this tree implemenation play very well with types diagnostic
+-- See scopes implementation. For each handler we just override desired node using @param
 
 return tree
