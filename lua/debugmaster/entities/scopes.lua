@@ -118,6 +118,7 @@ function scopes.fetch_frame(s, frame, cb)
     for _, scope in ipairs(scp) do
       scope.kind = "scope"
       scope.children = {}
+      scope.collapsed = scope.name ~= "Locals"
       table.insert(root.children, scope)
       root.child_by_name[scope.name] = scope
       scopes.load_variables(s, scope, function()

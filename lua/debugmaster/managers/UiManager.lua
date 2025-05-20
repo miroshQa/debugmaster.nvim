@@ -75,8 +75,6 @@ UiManager.scopes = (function()
     actions = scopes.actions,
   }
 
-  local view = tree.view.new { tree = tr }
-
   local update_tree = function()
     local s = dap.session()
     if not s or not s.current_frame then
@@ -85,13 +83,13 @@ UiManager.scopes = (function()
     scopes.fetch_frame(s, s.current_frame, function(to)
       if not tr.root.children then -- first init
         tr.root.children = { to }
-        view:refresh()
+        UiManager.dashboard.view:refresh()
         return
       end
       local from = tr.root.children[1]
       scopes.sync_frame(s, from, to, function()
         tr.root.children = { to }
-        view:refresh()
+        UiManager.dashboard.view:refresh()
       end)
     end)
   end
@@ -102,8 +100,8 @@ UiManager.scopes = (function()
     callback = update_tree
   })
   return {
+    tree = tr,
     name = "[S]copes",
-    buf = view.buf,
   }
 end)()
 
@@ -161,41 +159,44 @@ end)()
 --   }
 -- end)()
 --
--- UiManager.threads = (function()
---   local threads = require("debugmaster.entities.threads")
---   local tr = tree.new {
---     root = { kind = "root" },
---     renderer = threads.renderer,
---     actions = threads.actions,
---   }
---   local update_tree = function()
---     local s = dap.session()
---     if not s then
---       return
---     end
---     tr.root = { kind = "root", children = {} }
---     for _, thread in pairs(s.threads --[=[@as dm.ThreadsNode[]]=]) do
---       thread.kind = "thread"
---       thread.children = {}
---       for _, frame in ipairs(thread.frames --[=[@as dm.FrameNode[]]=]) do
---         frame.kind = "frame"
---         table.insert(thread.children, frame)
---       end
---       table.insert(tr.root.children, thread)
---     end
---     tr:refresh()
---   end
---   api.nvim_create_autocmd("User", {
---     pattern = "DmCurrentFrameChanged",
---     callback = update_tree,
---   })
---   dap.listeners.after.stackTrace["threads_widget"] = update_tree
---   return {
---     name = "[T]hreads",
---     buf = tr.buf
---   }
--- end)()
---
+UiManager.threads = (function()
+  local threads = require("debugmaster.entities.threads")
+  local tr = {
+    root = { kind = "root" },
+    renderer = threads.renderer,
+    actions = threads.actions,
+  }
+  local threads_view = tree.view.new {
+    tree = tr,
+  }
+  local update_tree = function()
+    local s = dap.session()
+    if not s then
+      return
+    end
+    tr.root = { kind = "root", children = {} }
+    for _, thread in pairs(s.threads --[=[@as dm.ThreadsNode[]]=]) do
+      thread.kind = "thread"
+      thread.children = {}
+      for _, frame in ipairs(thread.frames --[=[@as dm.FrameNode[]]=]) do
+        frame.kind = "frame"
+        table.insert(thread.children, frame)
+      end
+      table.insert(tr.root.children, thread)
+    end
+    UiManager.dashboard.view:refresh()
+  end
+  api.nvim_create_autocmd("User", {
+    pattern = "DmCurrentFrameChanged",
+    callback = update_tree,
+  })
+  dap.listeners.after.stackTrace["threads_widget"] = update_tree
+  return {
+    name = "[T]hreads",
+    tree = tr,
+  }
+end)()
+
 UiManager.sidepanel = require("debugmaster.entities.multiwin").new()
 -- UiManager.repl = (function()
 --   local dap_repl = require 'dap.repl'
@@ -216,20 +217,27 @@ UiManager.sidepanel = require("debugmaster.entities.multiwin").new()
 --   }
 -- end)()
 --
--- UiManager.dashboard = (function()
---   return {
---     -- rename to [S]tate and remove [S]copes?
---     name = "[D]ashboard",
---     buf = 0,
---   }
--- end)()
+UiManager.dashboard = (function()
+  local dashboard = tree.multi.new {
+    UiManager.threads.tree,
+    UiManager.scopes.tree,
+  }
+  local dashboard_view = tree.view.new {
+    tree = dashboard,
+  }
+  return {
+    name = "[D]ashboard",
+    buf = dashboard_view.buf,
+    view = dashboard_view,
+  }
+end)()
 
 
 -- UiManager.sidepanel:add_component(UiManager.dashboard)
-UiManager.sidepanel:add_component(UiManager.scopes)
+UiManager.sidepanel:add_component(UiManager.dashboard)
 -- UiManager.sidepanel:add_component(UiManager.repl)
 -- UiManager.sidepanel:add_component(UiManager.terminal)
 -- UiManager.sidepanel:add_component(UiManager.help)
-UiManager.sidepanel:set_active(UiManager.scopes)
+UiManager.sidepanel:set_active(UiManager.dashboard)
 
 return UiManager

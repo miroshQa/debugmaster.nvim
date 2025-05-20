@@ -150,6 +150,11 @@ end
 ---@alias dm.TreeNodeAction fun(cur: dm.TreeNode, tr: dm.TreeView)
 ---@alias dm.TreeNodeActions table<string, dm.TreeNodeAction> key to action. only normal mode currently supported
 
+---@class dm.Tree
+---@field root dm.TreeNode
+---@field actions? dm.TreeNodeActions
+---@field renderer dm.NodeRenderer
+
 ---@class dm.TreeView
 ---@field snapshot dm.TreeRenderSnapshot
 ---@field tree dm.Tree
@@ -162,6 +167,7 @@ TreeViewMethods.__index = TreeViewMethods
 ---TODO: return new snapshot? Override existing snapshot with old??? For partial rendering
 ---@param node dm.TreeNode?
 function TreeViewMethods:refresh(node)
+  print("renderrerd")
   self.snapshot = tree.render({
     buf = self.buf,
     root = node or self.tree.root,
@@ -197,65 +203,80 @@ function tree.view.new(params)
   return self
 end
 
----@class dm.Tree
----@field root dm.TreeNode
----@field actions? dm.TreeNodeActions
----@field renderer dm.NodeRenderer
-
----@class dm.MultiTree: dm.Tree
----@field root dm.MultiTreeNode
-
----@class dm.MultiTreeNode
----@field tr dm.Tree
----@field kind string
-
 tree.multi = {}
----@type fun(forest: table<string, dm.Tree>): dm.MultiTree
+---@type fun(forest: dm.Tree[]): dm.Tree
 function tree.multi.new(forest)
   ---@type table<string, boolean> set
   local all_keys = {}
-  for _, comp in pairs(forest) do
+  for _, comp in ipairs(forest) do
     for key, _ in pairs(comp.actions) do
       all_keys[key] = true
     end
   end
 
+  ---@class dm.MultiTreeNode
+  ---@field tree dm.Tree
+  ---@field nodes_by_line table<string, dm.TreeNode>
+
+
   ---@type table<string, dm.TreeNodeAction>
   local actions = {}
   for key, _ in pairs(all_keys) do
-    local dispatcher = function(cur)
-      local action = cur.action[key]
-      local line = api.nvim_win_get_cursor(0)[1]
+    ---@param cur dm.MultiTreeNode
+    ---@param v dm.TreeView
+    local dispatcher = function(cur, v)
+      local action = cur.tree.actions[key]
+      ---@type dm.NodeRenderStat
+      local stat = v.snapshot.stats[cur]
       if action then
-        action(cur.nodes_by_line[line])
+        local line = api.nvim_win_get_cursor(0)[1] - stat.start
+        local underlying_node = cur.nodes_by_line[line]
+        action(underlying_node, v)
       end
     end
+
     actions[key] = dispatcher
   end
 
+  ---@param node dm.MultiTreeNode
   local renderer = function(node, _, _)
+    if node.kind == "root" then
+      return nil
+    end
     local all_lines = {}
-    for cur, depth, parent in tree.iter(node.node) do
-      local lines = node.renderer(cur, depth, parent) or {}
-      for line in ipairs(lines) do
+    local line_num = 0
+    for cur, depth, parent in tree.iter(node.tree.root) do
+      local lines = node.tree.renderer(cur, depth, parent) or {}
+      for _, line in ipairs(lines) do
         table.insert(all_lines, line)
-        node.nodes_by_line[#all_lines] = cur
+        node.nodes_by_line[line_num] = cur
+        line_num = line_num + 1
       end
     end
     return all_lines
   end
 
-  ---@type dm.MultiTree
-  local self = {
-    root = {
-      kind = "multi",
-      childre = {},
-    },
-    actions = actions,
+  local children = {}
+  for _, tr in ipairs(forest) do
+    ---@type dm.MultiTreeNode
+    local child = {
+      tree = tr,
+      nodes_by_line = {}
+    }
+    table.insert(children, child)
+  end
+
+  ---@type dm.Tree
+  local result = {
     renderer = renderer,
+    actions = actions,
+    root = {
+      kind = "root",
+      children = children,
+    }
   }
 
-  return self
+  return result
 end
 
 ---@class dm.NodeWithKind: dm.TreeNode
