@@ -8,7 +8,25 @@ local tree = {}
 ---@alias dm.HlSegment [string, string] First is text, second is highlight group.
 ---@alias dm.HlLine dm.HlSegment[]
 
+---@class dm.TreeNodeRenderEvent
+---@field event "render"
+---@field cur dm.TreeNode
+---@field depth number
+---@field parent dm.TreeNode
+---@field out {lines: dm.HlLine[]?}
+
+---@class dm.TreeNodeKeymapEvent
+---@field event "keymap"
+---@field cur dm.TreeNode
+---@field key string
+---@field view dm.TreeView
+---@field out nil
+
+---@alias dm.TreeNodeEvent dm.TreeNodeRenderEvent | dm.TreeNodeKeymapEvent
+---@alias dm.TreeNodeEventHandler fun(event: dm.TreeNodeEvent)
+
 ---@class dm.TreeNode
+---@field handler dm.TreeNodeEventHandler?
 ---@field collapsed boolean?
 ---@field children dm.TreeNode[]?
 
@@ -40,15 +58,9 @@ function SnapshotMethods:cur()
   return cur
 end
 
----@alias dm.NodeRenderOutput nil | dm.HlLine[]
-
----parent must be null only for root element, depth starts with 0
----@alias dm.NodeRenderer fun(node: dm.TreeNode, depth: number, parent: dm.TreeNode?): dm.NodeRenderOutput
-
 ---@class dm.TreeRenderParams
 ---@field buf number
 ---@field root dm.TreeNode
----@field renderer dm.NodeRenderer
 
 ---Render tree like structure conforming to the
 ---dm.TreeNode interface. Each node can contains children and collapsed fields
@@ -71,10 +83,13 @@ function tree.render(opts)
   local ns_id = api.nvim_create_namespace("")
 
   for cur, depth, parent in tree.iter(opts.root) do
+    ---@type dm.TreeNodeRenderEvent
+    local event = { event = "render", cur = cur, depth = depth, parent = parent, out = {} }
     stats[cur] = { len = 0, start = line_num }
-    ---@type dm.HlLine[]
-    local lines = opts.renderer(cur, depth, parent) or {}
-
+    if cur.handler then
+      cur.handler(event)
+    end
+    local lines = event.out.lines or {}
     for _, line in ipairs(lines) do
       local line_text = ""
       local current_col = 0
@@ -147,17 +162,9 @@ function tree.iter(root)
   end)
 end
 
----@alias dm.TreeNodeAction fun(cur: dm.TreeNode, tr: dm.TreeView)
----@alias dm.TreeNodeActions table<string, dm.TreeNodeAction> key to action. only normal mode currently supported
-
----@class dm.Tree
----@field root dm.TreeNode
----@field actions? dm.TreeNodeActions
----@field renderer dm.NodeRenderer
-
 ---@class dm.TreeView
 ---@field snapshot dm.TreeRenderSnapshot
----@field tree dm.Tree
+---@field root dm.TreeNode
 ---@field buf number
 local TreeViewMethods = {}
 ---@private
@@ -167,157 +174,63 @@ TreeViewMethods.__index = TreeViewMethods
 ---TODO: return new snapshot? Override existing snapshot with old??? For partial rendering
 ---@param node dm.TreeNode?
 function TreeViewMethods:refresh(node)
-  print("renderrerd")
   self.snapshot = tree.render({
     buf = self.buf,
-    root = node or self.tree.root,
-    renderer = self.tree.renderer,
+    root = node or self.root,
   })
 end
 
+---@class dm.TreeViewParams
+---@field root dm.TreeNode
+---@field action_trigger_keys string[]
+
 tree.view = {}
----@param params {tree: dm.Tree}
+---@param params dm.TreeViewParams
 function tree.view.new(params)
   local buf = vim.api.nvim_create_buf(false, true)
   ---@type dm.TreeView
   local self = setmetatable({
     buf = buf,
-    tree = params.tree,
+    root = params.root,
     snapshot = tree.render({
       buf = buf,
-      root = params.tree.root,
-      renderer = params.tree.renderer,
+      root = params.root,
     }),
   }, TreeViewMethods)
 
-  if self.tree.actions then
-    for key, handler in pairs(self.tree.actions) do
-      local mode = "n"
-      api.nvim_buf_set_keymap(buf, mode, key, "", {
-        callback = function()
-          handler(self.snapshot:cur(), self)
-        end
-      })
-    end
+  for _, key in pairs(params.action_trigger_keys) do
+    local mode = "n"
+    api.nvim_buf_set_keymap(buf, mode, key, "", {
+      callback = function()
+        local cur = self.snapshot:cur()
+        ---@type dm.TreeNodeKeymapEvent
+        local event = { event = "keymap", cur = cur, key = key, view = self }
+        cur.handler(event)
+      end
+    })
   end
   return self
 end
 
-tree.multi = {}
----@type fun(forest: dm.Tree[]): dm.Tree
-function tree.multi.new(forest)
-  ---@type table<string, boolean> set
-  local all_keys = {}
-  for _, comp in ipairs(forest) do
-    for key, _ in pairs(comp.actions) do
-      all_keys[key] = true
-    end
-  end
+tree.dispatcher = {}
 
-  ---@class dm.MultiTreeNode
-  ---@field tree dm.Tree
-  ---@field nodes_by_line table<string, dm.TreeNode>
+---@class dm.TreeNodeEventDispatcherParams
+---@field render fun(event: dm.TreeNodeRenderEvent)
+---@field keymaps table<string, fun(event: dm.TreeNodeKeymapEvent)>
 
-
-  ---@type table<string, dm.TreeNodeAction>
-  local actions = {}
-  for key, _ in pairs(all_keys) do
-    ---@param cur dm.MultiTreeNode
-    ---@param v dm.TreeView
-    local dispatcher = function(cur, v)
-      local action = cur.tree.actions[key]
-      ---@type dm.NodeRenderStat
-      local stat = v.snapshot.stats[cur]
-      if action then
-        local line = api.nvim_win_get_cursor(0)[1] - stat.start
-        local underlying_node = cur.nodes_by_line[line]
-        action(underlying_node, v)
+---@param params dm.TreeNodeEventDispatcherParams
+---@return dm.TreeNodeEventHandler
+function tree.dispatcher.new(params)
+  return function(event)
+    if event.event == "render" then
+      params.render(event)
+    elseif event.event == "keymap" then
+      local handler = params.keymaps[event.key]
+      if handler then
+        handler(event)
       end
     end
-
-    actions[key] = dispatcher
-  end
-
-  ---@param node dm.MultiTreeNode
-  local renderer = function(node, _, _)
-    if node.kind == "root" then
-      return nil
-    end
-    local all_lines = {}
-    local line_num = 0
-    for cur, depth, parent in tree.iter(node.tree.root) do
-      local lines = node.tree.renderer(cur, depth, parent) or {}
-      for _, line in ipairs(lines) do
-        table.insert(all_lines, line)
-        node.nodes_by_line[line_num] = cur
-        line_num = line_num + 1
-      end
-    end
-    return all_lines
-  end
-
-  local children = {}
-  for _, tr in ipairs(forest) do
-    ---@type dm.MultiTreeNode
-    local child = {
-      tree = tr,
-      nodes_by_line = {}
-    }
-    table.insert(children, child)
-  end
-
-  ---@type dm.Tree
-  local result = {
-    renderer = renderer,
-    actions = actions,
-    root = {
-      kind = "root",
-      children = children,
-    }
-  }
-
-  return result
-end
-
----@class dm.NodeWithKind: dm.TreeNode
----@field kind string
-
-tree.dispatcher = { action = {}, renderer = {} }
-
----handler also can be a string, will be used as alias on the other handler in this table
----@param handlers table<string, dm.NodeRenderer | string>
----@return dm.NodeRenderer
-function tree.dispatcher.renderer.new(handlers)
-  ---@type dm.NodeRenderer
-  ---@param node  dm.NodeWithKind
-  return function(node, depth, parent)
-    assert(node.kind, "node must have kind!")
-    local handler = handlers[node.kind]
-    handler = type(handler) == "string" and handlers[handler] or handler
-    if handler then return handler(node, depth, parent) else return nil end
   end
 end
-
----handler also can be a string, will be used as alias on the other handler in this table
----@param handlers table<string, dm.TreeNodeAction | string>
----@return dm.TreeNodeAction
-function tree.dispatcher.action.new(handlers)
-  ---@type dm.TreeNodeAction
-  ---@param node  dm.NodeWithKind
-  return function(node, tr)
-    assert(node.kind, "node must have kind!")
-    local handler = handlers[node.kind]
-    handler = type(handler) == "string" and handlers[handler] or handler
-    if handler then return handler(node, tr) else return end
-  end
-end
-
--- need to duplicate this logic, otherwise we will lost up lua_ls diagnostic
--- https://luals.github.io/wiki/annotations/ need to wait when @overload issue will be resolved
-
--- Despite lua_ls lacks generic classes this tree implemenation play very well with types diagnostic
--- See scopes implementation. For each handler we just override desired node using @param
-
--- TODO: Add tree.loader component?
 
 return tree

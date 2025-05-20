@@ -34,31 +34,58 @@ scopes.types_to_hl_group = {
   ["function"] = "Function",
 }
 
-scopes.renderer = dispatcher.renderer.new {
-  ---@param node dm.ScopesRoot
-  root = function(node, depth, parent)
-    return {
+scopes.root_handler = dispatcher.new {
+  render = function(event)
+    event.out.lines = {
       { { "Scopes:", "WarningMsg" }, },
       { { " Expand node - <CR>" },   { " K - inspect node" } }
     }
   end,
-  ---@param node dm.ScopesNode
-  scope = function(node, depth, parent)
-    local icon = node.collapsed and " " or " "
-    icon = node.variablesReference == 0 and "" or icon
-    return {
-      { { icon }, { node.name } },
+  keymaps = {}
+}
+
+scopes.scope_handler = dispatcher.new {
+  render = function(event)
+    ---@type dm.ScopesNode
+    local cur = event.cur
+    local icon = cur.collapsed and " " or " "
+    icon = cur.variablesReference == 0 and "" or icon
+    event.out.lines = {
+      { { icon }, { cur.name } },
     }
   end,
-  ---@param node dm.VariablesNode
-  var = function(node, depth, parent)
+  keymaps = {}
+}
+
+
+scopes.var_handler = dispatcher.new {
+  render = function(event)
+    ---@type dm.VariablesNode
+    local node = event.cur
     local icon = node.collapsed and " " or " "
     icon = node.variablesReference == 0 and "" or icon
-    local indent = string.rep("  ", depth)
-    return {
+    local indent = string.rep("  ", event.depth)
+    event.out.lines = {
       { { indent }, { icon }, { node.name, "Exception" }, { " = " }, { node.value, scopes.types_to_hl_group[node.type] } }
     }
-  end
+  end,
+  keymaps = {
+    ["<CR>"] = function(event)
+      ---@type dm.VariablesNode | dm.ScopesNode
+      local cur = event.cur
+      local s = dap.session()
+      cur.collapsed = not cur.collapsed
+      if s and cur.variablesReference > 0 and not cur.children then
+        scopes.load_variables(s, cur, function()
+          cur.collapsed = false
+          print("resolving reference")
+          event.view:refresh()
+        end)
+      else
+        event.view:refresh()
+      end
+    end
+  }
 }
 
 ---Load varialles. Erase all previous children. Cb called on done. Set expanded = true
@@ -76,6 +103,7 @@ function scopes.load_variables(s, target, cb)
     local vars = result.variables
     for _, var in ipairs(vars) do
       var.kind = "var"
+      var.handler = scopes.var_handler
       target.child_by_name[var.name] = var
       table.insert(target.children, var)
     end
@@ -109,6 +137,7 @@ end
 function scopes.fetch_frame(s, frame, cb)
   ---@type dm.StackFrameNode
   local root = { kind = "frame", children = {}, expanded = true, child_by_name = {} }
+  root.handler = scopes.root_handler
   ---@param err any
   ---@param result dap.ScopesResponse
   s:request("scopes", { frameId = frame.id }, function(err, result)
@@ -118,6 +147,7 @@ function scopes.fetch_frame(s, frame, cb)
     for _, scope in ipairs(scp) do
       scope.kind = "scope"
       scope.children = {}
+      scope.handler = scopes.scope_handler
       scope.collapsed = scope.name ~= "Locals"
       table.insert(root.children, scope)
       root.child_by_name[scope.name] = scope
@@ -203,46 +233,5 @@ function scopes.sync_frame(s, from, to, cb)
     cb_called = true
   end
 end
-
----@type table<string, dm.TreeNodeAction>
-scopes.actions = {
-  ["<CR>"] = dispatcher.action.new {
-    ---@type fun(cur: dm.ScopesNode | dm.VariablesNode, tr: dm.TreeView)
-    scope = function(cur, v)
-      local s = dap.session()
-      cur.collapsed = not cur.collapsed
-      if s and cur.variablesReference > 0 and not cur.children then
-        scopes.load_variables(s, cur, function()
-          cur.collapsed = false
-          print("resolving reference")
-          v:refresh()
-        end)
-      else
-        v:refresh()
-      end
-    end,
-    var = "scope"
-  },
-  ["r"] = function(cur, v)
-    if cur.children then
-      cur.collapsed = not cur.collapsed
-    end
-    local s = dap.session()
-    if s and not cur.children then
-      scopes.resolve_variables_recursive(s, cur, function()
-        v:refresh()
-      end)
-    else
-      v:refresh()
-    end
-  end,
-  ["K"] = function(cur)
-    local b = vim.api.nvim_create_buf(false, true)
-    vim.bo[b].filetype = "lua"
-    vim.api.nvim_buf_set_lines(b, 0, -1, false, vim.split(vim.inspect(cur), "\n"))
-    view.popup.new { buf = b }
-    cur.collapsed = not cur.collapsed
-  end,
-}
 
 return scopes

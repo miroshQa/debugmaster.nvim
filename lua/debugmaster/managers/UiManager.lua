@@ -68,11 +68,10 @@ UiManager.scopes = (function()
   local scopes = require("debugmaster.entities.scopes")
   local id = "debugmaster"
 
-  ---@type dm.Tree
-  local tr = {
-    renderer = scopes.renderer,
-    root = { kind = "root", children = nil },
-    actions = scopes.actions,
+  local root = { kind = "root", children = nil, handler = scopes.root_handler }
+  local view = tree.view.new {
+    root = root,
+    action_trigger_keys = { "<CR>" }
   }
 
   local update_tree = function()
@@ -81,15 +80,14 @@ UiManager.scopes = (function()
       return
     end
     scopes.fetch_frame(s, s.current_frame, function(to)
-      if not tr.root.children then -- first init
-        tr.root.children = { to }
-        UiManager.dashboard.view:refresh()
-        return
+      if not root.children then -- first init
+        root.children = { to }
+        return view:refresh()
       end
-      local from = tr.root.children[1]
+      local from = root.children[1]
       scopes.sync_frame(s, from, to, function()
-        tr.root.children = { to }
-        UiManager.dashboard.view:refresh()
+        root.children = { to }
+        return view:refresh()
       end)
     end)
   end
@@ -99,8 +97,10 @@ UiManager.scopes = (function()
     pattern = "DmCurrentFrameChanged",
     callback = update_tree
   })
+
   return {
-    tree = tr,
+    root = root,
+    buf = view.buf,
     name = "[S]copes",
   }
 end)()
@@ -127,6 +127,7 @@ end)()
 --   }
 -- end)()
 --
+
 --
 -- UiManager.breakpoints = (function()
 --   local breakpoints = require("debugmaster.entities.breakpoints")
@@ -159,22 +160,17 @@ end)()
 --   }
 -- end)()
 --
+
 UiManager.threads = (function()
   local threads = require("debugmaster.entities.threads")
-  local tr = {
-    root = { kind = "root" },
-    renderer = threads.renderer,
-    actions = threads.actions,
-  }
-  local threads_view = tree.view.new {
-    tree = tr,
-  }
+  local root = { kind = "root" }
+
   local update_tree = function()
     local s = dap.session()
     if not s then
       return
     end
-    tr.root = { kind = "root", children = {} }
+    root = { kind = "root", children = {} }
     for _, thread in pairs(s.threads --[=[@as dm.ThreadsNode[]]=]) do
       thread.kind = "thread"
       thread.children = {}
@@ -182,7 +178,7 @@ UiManager.threads = (function()
         frame.kind = "frame"
         table.insert(thread.children, frame)
       end
-      table.insert(tr.root.children, thread)
+      table.insert(root.children, thread)
     end
     UiManager.dashboard.view:refresh()
   end
@@ -193,7 +189,7 @@ UiManager.threads = (function()
   dap.listeners.after.stackTrace["threads_widget"] = update_tree
   return {
     name = "[T]hreads",
-    tree = tr,
+    root = root,
   }
 end)()
 
@@ -217,23 +213,44 @@ UiManager.sidepanel = require("debugmaster.entities.multiwin").new()
 --   }
 -- end)()
 --
+
 UiManager.dashboard = (function()
-  local dashboard = tree.multi.new {
-    UiManager.threads.tree,
-    UiManager.scopes.tree,
+  local separator = {
+    ---@type dm.TreeNodeEventHandler
+    handler = function(event)
+      if event.event == "render" then
+        event.out.lines = {
+          { { "                  " } },
+          { { "------------------" } },
+          { { "                  " } },
+        }
+      end
+    end
   }
-  local dashboard_view = tree.view.new {
-    tree = dashboard,
+
+  ---@type dm.TreeNode
+  local root = {
+    children = {
+      UiManager.scopes.root,
+      separator,
+      UiManager.threads.root,
+    }
   }
+
+  local view = tree.view.new {
+    root = root,
+    action_trigger_keys = { "<CR>" },
+  }
+
   return {
     name = "[D]ashboard",
-    buf = dashboard_view.buf,
-    view = dashboard_view,
+    buf = view.buf,
+    view = view,
   }
 end)()
 
 
--- UiManager.sidepanel:add_component(UiManager.dashboard)
+-- UiManager.sidepanel:add_component(UiManager.scopes)
 UiManager.sidepanel:add_component(UiManager.dashboard)
 -- UiManager.sidepanel:add_component(UiManager.repl)
 -- UiManager.sidepanel:add_component(UiManager.terminal)
