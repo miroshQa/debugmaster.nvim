@@ -29,7 +29,9 @@ threads.thread_handler = tree.dispatcher.new {
   end,
   keymaps = {
     ["<CR>"] = function(event)
-      SessionManager.set_current_frame(event.cur)
+      local cur = event.cur
+      cur.collapsed = not cur.collapsed
+      event.view:refresh()
     end
   }
 }
@@ -45,9 +47,7 @@ threads.frame_handler = tree.dispatcher.new {
   end,
   keymaps = {
     ["<CR>"] = function(event)
-      local cur = event.cur
-      cur.collapsed = not cur.collapsed
-      event.view:refresh()
+      SessionManager.set_current_frame(event.cur)
     end
   }
 }

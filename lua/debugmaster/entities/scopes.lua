@@ -1,6 +1,5 @@
 local dap = require("dap")
 local view = require("debugmaster.lib.view")
-local log = require("debugmaster.lib.utils").log
 local tree = require("debugmaster.lib.tree")
 local dispatcher = tree.dispatcher
 
@@ -34,19 +33,36 @@ scopes.types_to_hl_group = {
   ["function"] = "Function",
 }
 
+scopes.toggle_variables = function(event)
+  ---@type dm.VariablesNode | dm.ScopesNode
+  local cur = event.cur
+  local s = dap.session()
+  cur.collapsed = not cur.collapsed
+  if s and cur.variablesReference > 0 and not cur.children then
+    scopes.load_variables(s, cur, function()
+      cur.collapsed = false
+      event.view:refresh()
+    end)
+  else
+    event.view:refresh()
+  end
+end
+
 scopes.root_handler = dispatcher.new {
   render = function(event)
     event.out.lines = {
-      { { "Scopes:", "WarningMsg" }, },
-      { { " Expand node - <CR>" },   { " K - inspect node" } }
+      { { "SCOPES:", "WarningMsg" }, },
+      { { "Expand node - <CR>" } }
     }
   end,
   keymaps = {}
 }
 
 scopes.scope_handler = dispatcher.new {
+  ---@class dm.ScopeNodeRenderEvent: dm.TreeNodeRenderEvent
+  ---@field cur dm.ScopesNode
+  ---@param event dm.ScopeNodeRenderEvent
   render = function(event)
-    ---@type dm.ScopesNode
     local cur = event.cur
     local icon = cur.collapsed and " " or " "
     icon = cur.variablesReference == 0 and "" or icon
@@ -54,13 +70,16 @@ scopes.scope_handler = dispatcher.new {
       { { icon }, { cur.name } },
     }
   end,
-  keymaps = {}
+  keymaps = {
+    ["<CR>"] = scopes.toggle_variables
+  }
 }
 
-
 scopes.var_handler = dispatcher.new {
+  ---@class dm.VarsNodeRenderEvent: dm.TreeNodeRenderEvent
+  ---@field cur dm.VariablesNode
+  ---@param event dm.VarsNodeRenderEvent
   render = function(event)
-    ---@type dm.VariablesNode
     local node = event.cur
     local icon = node.collapsed and " " or " "
     icon = node.variablesReference == 0 and "" or icon
@@ -70,21 +89,7 @@ scopes.var_handler = dispatcher.new {
     }
   end,
   keymaps = {
-    ["<CR>"] = function(event)
-      ---@type dm.VariablesNode | dm.ScopesNode
-      local cur = event.cur
-      local s = dap.session()
-      cur.collapsed = not cur.collapsed
-      if s and cur.variablesReference > 0 and not cur.children then
-        scopes.load_variables(s, cur, function()
-          cur.collapsed = false
-          print("resolving reference")
-          event.view:refresh()
-        end)
-      else
-        event.view:refresh()
-      end
-    end
+    ["<CR>"] = scopes.toggle_variables,
   }
 }
 
@@ -137,7 +142,6 @@ end
 function scopes.fetch_frame(s, frame, cb)
   ---@type dm.StackFrameNode
   local root = { kind = "frame", children = {}, expanded = true, child_by_name = {} }
-  root.handler = scopes.root_handler
   ---@param err any
   ---@param result dap.ScopesResponse
   s:request("scopes", { frameId = frame.id }, function(err, result)

@@ -18,20 +18,6 @@ function utils.get_windows_for_buffer(buf)
   return windows
 end
 
-do
-  local f = io.open(vim.fs.joinpath(vim.fn.stdpath("config"), "log.md"), "w+")
-  local count = 1
-
-  utils.log = function(message, obj)
-    count = count + 1
-    f:write(string.format("[%s]: %s\n", tostring(count), message))
-    f:write("```lua\n")
-    f:write(vim.inspect(obj))
-    f:write("\n")
-    f:write("\n```\n")
-  end
-end
-
 ---@param buf number
 ---@param mode string
 ---@param key string

@@ -6,21 +6,23 @@ local dispatcher = tree.dispatcher
 local breakpoints = {}
 
 ---@alias dm.Bp {kind: "bp", line: number, condition?: string, buf: number}
----@alias dm.BpDummyRoot {kind: "dummy"}
----@alias dm.BpTreeNode dm.BpDummyRoot | dm.Bp
+---@alias dm.BprootRoot {kind: "root"}
+---@alias dm.BpTreeNode dm.BprootRoot | dm.Bp
 
 
-breakpoints.renderer = dispatcher.renderer.new {
-  ---@param node dm.BpDummyRoot
-  dummy = function(node, depth, parent)
-    return {
-      { { "Breakpoints", "Exception" } },
-      { { "t - remove breakpoint or all breakpoints in the file", "Comment" } },
-      { { "c - change breakpoint condition", "Comment" } }
+breakpoints.root_handler = dispatcher.new {
+  render = function(event)
+    event.out.lines = {
+      { { "BREAKPOINTS:", "WarningMsg" } },
+      { { "t - remove breakpoint", "Comment" }, { "c - change breakpoint condition", "Comment" } },
     }
   end,
-  ---@param node dm.Bp
-  bp = function(node, depth, parent)
+  keymaps = {}
+}
+
+breakpoints.bp_handler = dispatcher.new {
+  render = function(event)
+    local node = event.cur
     local indent = "    "
     local linenr = node.line
     local line = vim.trim(api.nvim_buf_get_lines(node.buf, linenr - 1, linenr, false)[1])
@@ -32,24 +34,33 @@ breakpoints.renderer = dispatcher.renderer.new {
     if condition and condition ~= "" then
       table.insert(lines, { { indent }, { "condition: ", "Comment" }, { node.condition } })
     end
-    return lines
-  end
+    event.out.lines = lines
+  end,
+  keymaps = {
+    c = function(event)
+      local cur = event.cur
+      local condition = vim.fn.input({ default = cur.condition or "" })
+      bps.set({ condition = condition }, cur.buf, cur.line)
+    end,
+    t = function(event)
+      breakpoints.remove_bp(event.cur)
+    end,
+    ["<CR>"] = function(event)
+    end
+  }
 }
 
 ---@param bp_list dm.Breakpoint[]
-function breakpoints.build_tree(bp_list)
-  ---@type dm.BpDummyRoot
-  local root = {
-    kind = "dummy",
-    expanded = true,
-    children = {},
-  }
+---@return dm.Breakpoint[]
+function breakpoints.build_bps(bp_list)
+  local children = {}
   for _, bp in pairs(bp_list) do
     ---@type dm.Bp[]
+    bp.handler = breakpoints.bp_handler
     bp.kind = "bp"
-    table.insert(root.children, bp)
+    table.insert(children, bp)
   end
-  return root
+  return children
 end
 
 ---@param node dm.BpTreeNode
@@ -62,30 +73,5 @@ function breakpoints.remove_bp(node)
     end
   end
 end
-
----@alias dm.BpTreeNodeAction fun(cur: dm.BpTreeNode, tr: dm.TreeView)
-
----@type table<string, dm.BpTreeNodeAction>
-breakpoints.actions = {
-  ["c"] = function(cur, _)
-    if cur.kind == "bp" then
-      local condition = vim.fn.input({ default = cur.condition or "" })
-      bps.set({ condition = condition }, cur.buf, cur.line)
-    end
-  end,
-  ["t"] = function(cur)
-    breakpoints.remove_bp(cur)
-  end,
-  ["<CR>"] = function(cur, v)
-    v.tree = breakpoints.build_tree(bps.get())
-    v:refresh()
-    if cur.kind == "bp" then
-      bps.remove(cur.buf, cur.line)
-      vim.cmd("q")
-      vim.cmd("buffer " .. cur.buf)
-      vim.cmd("normal " .. cur.line .. "G")
-    end
-  end,
-}
 
 return breakpoints

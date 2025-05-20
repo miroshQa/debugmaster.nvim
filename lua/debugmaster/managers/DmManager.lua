@@ -74,20 +74,12 @@ local sidepanel = {
       desc = "Toggle ui float mode",
     },
     {
-      key = "D",
-      action = function()
-        local UiManager = require("debugmaster.managers.UiManager")
-        UiManager.sidepanel:set_active(UiManager.dashboard)
-      end,
-      desc = "Open dashboard",
-    },
-    {
       key = "S",
       action = function()
         local UiManager = require("debugmaster.managers.UiManager")
-        UiManager.sidepanel:set_active_with_open(UiManager.scopes)
+        UiManager.sidepanel:set_active_with_open(UiManager.dashboard)
       end,
-      desc = "Open scopes",
+      desc = "Open state",
     },
     {
       key = "T",

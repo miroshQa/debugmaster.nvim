@@ -4,44 +4,36 @@ local tree = require("debugmaster.lib.tree")
 local sessions = {}
 
 
----@alias dm.SessionDummyNode {kind: "dummy", children: dm.SessionNode[], expanded: boolean}
----@alias dm.SessionNode {kind: "session", session: dap.Session}
----@alias dm.SessionTreeNode dm.SessionNode | dm.SessionDummyNode
+---@alias dm.SessionrootNode {handler: dm.TreeNodeEventHandler, children: dm.SessionNode[]}
+---@alias dm.SessionNode {handler: dm.SessionNodeEventHandler, session: dap.Session}
+---@alias dm.SessionTreeNode dm.SessionNode | dm.SessionrootNode
 
-sessions.renderer = tree.dispatcher.renderer.new {
-  dummy = function(node, depth, parent)
-    return {
-      { { "Sessions:" } },
+sessions.root_handler = tree.dispatcher.new {
+  render = function(event)
+    event.out.lines = {
+      { { "SESSIONS:", "WarningMsg" } },
     }
   end,
-  ---@param node dm.SessionNode
-  session = function(node, depth, parent)
-    return {
-      { { "  " }, { tostring(node.session.id) }, { node.session.config.name } },
-    }
-  end
+  keymaps = {},
 }
 
----comment
----@return dm.SessionDummyNode
-function sessions.build_tree()
-  ---@type dm.SessionDummyNode
-  local root = { kind = "dummy", children = {}, expanded = true }
-  for _, s in pairs(dap.sessions()) do
-    table.insert(root.children, {
-      session = s,
-      kind = "session",
-    })
-  end
-
-  return root
-end
-
----@type table<string, dm.TreeNodeAction>
-sessions.actions = {
-  ["<CR>"] = tree.dispatcher.action.new {
-    ---@param cur dm.SessionNode
-    session = function(cur, tr)
+---@alias dm.SessionNodeEventHandler fun(event: dm.SessionRenderEvent)
+---@type dm.SessionNodeEventHandler
+sessions.session_handler = tree.dispatcher.new {
+  ---@class dm.SessionRenderEvent: dm.TreeNodeRenderEvent
+  ---@field cur dm.SessionNode
+  ---@param event dm.SessionRenderEvent
+  render = function(event)
+    local node = event.cur
+    event.out.lines = {
+      { { string.format("%s. ", node.id) }, { node.config.name } },
+    }
+  end,
+  ---@class dm.SessionKeymapEvent: dm.TreeNodeKeymapEvent
+  ---@field cur dm.SessionNode
+  ---@type table<string, fun(event: dm.SessionKeymapEvent)>
+  keymaps = {
+    ["<CR>"] = function(event)
       print("session switching isn't implemented yet")
     end
   }

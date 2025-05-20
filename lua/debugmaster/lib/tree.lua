@@ -9,20 +9,23 @@ local tree = {}
 ---@alias dm.HlLine dm.HlSegment[]
 
 ---@class dm.TreeNodeRenderEvent
----@field event "render"
+---@field name "render"
 ---@field cur dm.TreeNode
 ---@field depth number
 ---@field parent dm.TreeNode
 ---@field out {lines: dm.HlLine[]?}
 
 ---@class dm.TreeNodeKeymapEvent
----@field event "keymap"
+---@field name "keymap"
 ---@field cur dm.TreeNode
 ---@field key string
 ---@field view dm.TreeView
 ---@field out nil
 
----@alias dm.TreeNodeEvent dm.TreeNodeRenderEvent | dm.TreeNodeKeymapEvent
+---@alias dm.TreeNodeEvent
+---| dm.TreeNodeRenderEvent
+---| dm.TreeNodeKeymapEvent
+
 ---@alias dm.TreeNodeEventHandler fun(event: dm.TreeNodeEvent)
 
 ---@class dm.TreeNode
@@ -84,7 +87,7 @@ function tree.render(opts)
 
   for cur, depth, parent in tree.iter(opts.root) do
     ---@type dm.TreeNodeRenderEvent
-    local event = { event = "render", cur = cur, depth = depth, parent = parent, out = {} }
+    local event = { name = "render", cur = cur, depth = depth, parent = parent, out = {} }
     stats[cur] = { len = 0, start = line_num }
     if cur.handler then
       cur.handler(event)
@@ -182,7 +185,7 @@ end
 
 ---@class dm.TreeViewParams
 ---@field root dm.TreeNode
----@field action_trigger_keys string[]
+---@field keymaps string[] Those keymaps will trigger keymap event for underlying cursor node
 
 tree.view = {}
 ---@param params dm.TreeViewParams
@@ -198,13 +201,13 @@ function tree.view.new(params)
     }),
   }, TreeViewMethods)
 
-  for _, key in pairs(params.action_trigger_keys) do
+  for _, key in pairs(params.keymaps) do
     local mode = "n"
     api.nvim_buf_set_keymap(buf, mode, key, "", {
       callback = function()
         local cur = self.snapshot:cur()
         ---@type dm.TreeNodeKeymapEvent
-        local event = { event = "keymap", cur = cur, key = key, view = self }
+        local event = { name = "keymap", cur = cur, key = key, view = self }
         cur.handler(event)
       end
     })
@@ -222,9 +225,9 @@ tree.dispatcher = {}
 ---@return dm.TreeNodeEventHandler
 function tree.dispatcher.new(params)
   return function(event)
-    if event.event == "render" then
+    if event.name == "render" then
       params.render(event)
-    elseif event.event == "keymap" then
+    elseif event.name == "keymap" then
       local handler = params.keymaps[event.key]
       if handler then
         handler(event)
