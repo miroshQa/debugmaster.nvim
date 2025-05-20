@@ -204,35 +204,35 @@ function scopes.sync_frame(s, from, to, cb)
 end
 
 ---@type table<string, dm.TreeNodeAction>
-scopes.handlers = {
+scopes.actions = {
   ["<CR>"] = dispatcher.action.new {
-    ---@type fun(cur: dm.ScopesNode | dm.VariablesNode, tr: dm.Tree)
-    scope = function(cur, tr)
+    ---@type fun(cur: dm.ScopesNode | dm.VariablesNode, tr: dm.TreeView)
+    scope = function(cur, v)
       local s = dap.session()
       cur.collapsed = not cur.collapsed
       if s and cur.variablesReference > 0 and not cur.children then
         scopes.load_variables(s, cur, function()
           cur.collapsed = false
           print("resolving reference")
-          tr:refresh()
+          v:refresh()
         end)
       else
-        tr:refresh()
+        v:refresh()
       end
     end,
     var = "scope"
   },
-  ["r"] = function(cur, tr)
+  ["r"] = function(cur, v)
     if cur.children then
       cur.collapsed = not cur.collapsed
     end
     local s = dap.session()
     if s and not cur.children then
       scopes.resolve_variables_recursive(s, cur, function()
-        tr:refresh()
+        v:refresh()
       end)
     else
-      tr:refresh()
+      v:refresh()
     end
   end,
   ["K"] = function(cur)
@@ -241,9 +241,6 @@ scopes.handlers = {
     vim.api.nvim_buf_set_lines(b, 0, -1, false, vim.split(vim.inspect(cur), "\n"))
     view.popup.new { buf = b }
     cur.collapsed = not cur.collapsed
-  end,
-  ["s"] = function(cur, tr)
-    vim.print(tr.snapshot.stats[cur])
   end,
 }
 

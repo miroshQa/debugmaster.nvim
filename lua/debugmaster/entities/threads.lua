@@ -41,20 +41,20 @@ function threads.find_current()
 end
 
 ---@type table<string, dm.TreeNodeAction>
-threads.handlers = {
+threads.actions = {
   ["<CR>"] = tree.dispatcher.action.new {
     ---@param cur dm.ThreadsNode
-    thread = function(cur, tr)
+    thread = function(cur, v)
       cur.collapsed = not cur.collapsed
-      tr:refresh()
+      v:refresh()
     end,
     ---@param cur dm.FrameNode
-    frame = function(cur, tr)
+    frame = function(cur, _)
       SessionManager.set_current_frame(cur)
     end,
   },
   ["K"] = tree.dispatcher.action.new {
-    thread = function(cur, tr)
+    thread = function(cur, _)
       local b = vim.api.nvim_create_buf(false, true)
       vim.bo[b].filetype = "lua"
       vim.api.nvim_buf_set_lines(b, 0, -1, false, vim.split(vim.inspect(cur), "\n"))

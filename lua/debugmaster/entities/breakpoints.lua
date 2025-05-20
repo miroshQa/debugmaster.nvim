@@ -63,10 +63,10 @@ function breakpoints.remove_bp(node)
   end
 end
 
----@alias dm.BpTreeNodeAction fun(cur: dm.BpTreeNode, tr: dm.Tree)
+---@alias dm.BpTreeNodeAction fun(cur: dm.BpTreeNode, tr: dm.TreeView)
 
 ---@type table<string, dm.BpTreeNodeAction>
-breakpoints.handlers = {
+breakpoints.actions = {
   ["c"] = function(cur, _)
     if cur.kind == "bp" then
       local condition = vim.fn.input({ default = cur.condition or "" })
@@ -76,9 +76,9 @@ breakpoints.handlers = {
   ["t"] = function(cur)
     breakpoints.remove_bp(cur)
   end,
-  ["<CR>"] = function(cur, tr)
-    tr.root = breakpoints.build_tree(bps.get())
-    tr:refresh()
+  ["<CR>"] = function(cur, v)
+    v.tree = breakpoints.build_tree(bps.get())
+    v:refresh()
     if cur.kind == "bp" then
       bps.remove(cur.buf, cur.line)
       vim.cmd("q")

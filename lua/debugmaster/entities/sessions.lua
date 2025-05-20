@@ -38,7 +38,7 @@ function sessions.build_tree()
 end
 
 ---@type table<string, dm.TreeNodeAction>
-sessions.handlers = {
+sessions.actions = {
   ["<CR>"] = tree.dispatcher.action.new {
     ---@param cur dm.SessionNode
     session = function(cur, tr)

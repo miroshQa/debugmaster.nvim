@@ -147,51 +147,45 @@ function tree.iter(root)
   end)
 end
 
----@class dm.Tree
----@field root dm.TreeNode
+---@alias dm.TreeNodeAction fun(cur: dm.TreeNode, tr: dm.TreeView)
+---@alias dm.TreeNodeActions table<string, dm.TreeNodeAction> key to action. only normal mode currently supported
+
+---@class dm.TreeView
+---@field snapshot dm.TreeRenderSnapshot
+---@field tree dm.Tree
 ---@field buf number
----@field snapshot dm.TreeRenderSnapshot Last render snapshot of the tree
----@field private _renderer dm.NodeRenderer
-local TreeMethods = {}
+local TreeViewMethods = {}
 ---@private
-TreeMethods.__index = TreeMethods
+TreeViewMethods.__index = TreeViewMethods
 
 --- Refresh the node in the tree. By default root node is assumed
 ---TODO: return new snapshot? Override existing snapshot with old??? For partial rendering
 ---@param node dm.TreeNode?
-function TreeMethods:refresh(node)
+function TreeViewMethods:refresh(node)
   self.snapshot = tree.render({
     buf = self.buf,
-    root = node or self.root,
-    renderer = self._renderer,
+    root = node or self.tree.root,
+    renderer = self.tree.renderer,
   })
 end
 
----@alias dm.TreeNodeAction fun(cur: dm.TreeNode, tr: dm.Tree)
-
-
----@class dm.NewTreeParams
----@field root dm.TreeNode
----@field renderer dm.NodeRenderer
----@field handlers? table<string, dm.TreeNodeAction> key: node action. only normal mode yet. support for others will be added in the future
-
----Return more highlevel primitive than TreeSnapshot. You can live without it
----Implicitly creates tree snapshot
----@param params dm.NewTreeParams
----@return dm.Tree
-function tree.new(params)
-  local root = params.root
+tree.view = {}
+---@param params {tree: dm.Tree}
+function tree.view.new(params)
   local buf = vim.api.nvim_create_buf(false, true)
-  local renderer = params.renderer
+  ---@type dm.TreeView
   local self = setmetatable({
     buf = buf,
-    root = root,
-    snapshot = tree.render({ buf = buf, root = root, renderer = renderer }),
-    _renderer = renderer,
-  }, TreeMethods)
+    tree = params.tree,
+    snapshot = tree.render({
+      buf = buf,
+      root = params.tree.root,
+      renderer = params.tree.renderer,
+    }),
+  }, TreeViewMethods)
 
-  if params.handlers then
-    for key, handler in pairs(params.handlers) do
+  if self.tree.actions then
+    for key, handler in pairs(self.tree.actions) do
       local mode = "n"
       api.nvim_buf_set_keymap(buf, mode, key, "", {
         callback = function()
@@ -200,6 +194,67 @@ function tree.new(params)
       })
     end
   end
+  return self
+end
+
+---@class dm.Tree
+---@field root dm.TreeNode
+---@field actions? dm.TreeNodeActions
+---@field renderer dm.NodeRenderer
+
+---@class dm.MultiTree: dm.Tree
+---@field root dm.MultiTreeNode
+
+---@class dm.MultiTreeNode
+---@field tr dm.Tree
+---@field kind string
+
+tree.multi = {}
+---@type fun(forest: table<string, dm.Tree>): dm.MultiTree
+function tree.multi.new(forest)
+  ---@type table<string, boolean> set
+  local all_keys = {}
+  for _, comp in pairs(forest) do
+    for key, _ in pairs(comp.actions) do
+      all_keys[key] = true
+    end
+  end
+
+  ---@type table<string, dm.TreeNodeAction>
+  local actions = {}
+  for key, _ in pairs(all_keys) do
+    local dispatcher = function(cur)
+      local action = cur.action[key]
+      local line = api.nvim_win_get_cursor(0)[1]
+      if action then
+        action(cur.nodes_by_line[line])
+      end
+    end
+    actions[key] = dispatcher
+  end
+
+  local renderer = function(node, _, _)
+    local all_lines = {}
+    for cur, depth, parent in tree.iter(node.node) do
+      local lines = node.renderer(cur, depth, parent) or {}
+      for line in ipairs(lines) do
+        table.insert(all_lines, line)
+        node.nodes_by_line[#all_lines] = cur
+      end
+    end
+    return all_lines
+  end
+
+  ---@type dm.MultiTree
+  local self = {
+    root = {
+      kind = "multi",
+      childre = {},
+    },
+    actions = actions,
+    renderer = renderer,
+  }
+
   return self
 end
 
