@@ -32,7 +32,8 @@ local tree = {}
 
 ---@class dm.SnapshotNodeInfo
 ---@field start number Starts with 1
----@field len number
+---@field len number amount of lines including children
+---@field this_len number len only of this node not including children
 ---@field parent dm.TreeNode?
 
 ---@class dm.TreeRenderSnapshot
@@ -65,6 +66,7 @@ end
 ---@field root dm.TreeNode
 ---@field start number? starts with 0 like in api.set_lines. 0 by default
 ---@field end_ number? like in api.set_lines. -1 by default
+---@field depth number? starting depth
 
 ---Render tree like structure conforming to the
 ---dm.TreeNode interface. Each node can contains children and collapsed fields
@@ -78,26 +80,21 @@ function tree.render(opts)
   local start = opts.start or 0
   local end_ = opts.end_ or -1
   local result_lines = {}
-  ---@type {line: number, hl: string, col_start: number, col_end: number}[]
-  local highlights = {}
+  local highlights = {} ---@type {line: number, hl: string, col_start: number, col_end: number}[]
   local line_num = start + 1
-  ---@type dm.TreeNode[]
-  local nodes = {}
-  ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
-  local info = {}
+  local nodes = {} ---@type dm.TreeNode[]
+  local info = {} ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
   local ns_id = api.nvim_create_namespace("")
-  ---@type table<dm.TreeNode, dm.TreeNode>
-  local parents = {}
 
   local function render(cur, depth, parent)
     ---@type dm.TreeNodeRenderEvent
     local event = { name = "render", cur = cur, depth = depth, parent = parent, out = {} }
-    info[cur] = { len = 0, start = line_num, parent = nil }
     if cur.handler then
       cur.handler(event)
     end
 
     local lines = event.out.lines or {}
+    info[cur] = { len = 0, start = line_num, parent = parent, this_len = #lines }
     for _, line in ipairs(lines) do
       local line_text = ""
       local current_col = 0
@@ -129,7 +126,7 @@ function tree.render(opts)
     info[cur].len = line_num - info[cur].start
   end
 
-  render(opts.root, 0, nil)
+  render(opts.root, opts.depth or 0, nil)
 
   local len = line_num - (start + 1)
   local buf = opts.buf
@@ -165,33 +162,59 @@ local TreeViewMethods = {}
 ---@private
 TreeViewMethods.__index = TreeViewMethods
 
---- Refresh the node in the tree. By default root node is assumed
----TODO: return new snapshot? Override existing snapshot with old??? For partial rendering
 ---@param node dm.TreeNode?
 function TreeViewMethods:refresh(node)
   if not node then
     self.snapshot = tree.render { buf = self.buf, root = self.root }
-  else
-    local info = self.snapshot.info[node]
-    local new_snapshot = tree.render {
-      root = node,
-      buf = self.buf,
-      start = info.start - 1,
-      end_ = info.start - 1 + info.len,
-    }
+    return
+  end
 
-    for i, n in ipairs(new_snapshot.nodes) do
-      self.snapshot.nodes[info.start + i] = n
-      self.snapshot.info[n] = new_snapshot.info[n]
-    end
+  -- PARTIAL RERENDERING IMPLEMENTATION
+  local old_nodes = self.snapshot.nodes
+  local line_num = 1
+  local old_line_ptr = 1
+  local nodes = {} ---@type dm.TreeNode[]
+  local info = {} ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
 
-    local delta = info.len - new_snapshot.len
-    local parent = self.snapshot.info[node].parent
-    while parent do
-      self.snapshot.info[parent].len = self.snapshot.info[parent].len + delta
-      parent = self.snapshot.info[parent].parent
+  local function traverse(cur, depth, parent)
+    info[cur] = { len = 0, start = line_num, parent = parent, this_len = 0 }
+    if cur == node then
+      local node_info = self.snapshot.info[node]
+      local new_snapshot = tree.render {
+        root = cur,
+        buf = self.buf,
+        start = node_info.start - 1,
+        end_ = node_info.start - 1 + node_info.len,
+        depth = depth,
+      }
+      info[cur].len = new_snapshot.len
+      info[cur].this_len = new_snapshot.info[cur].this_len
+      for _, new_node in ipairs(new_snapshot.nodes) do
+        table.insert(nodes, new_node)
+        line_num = line_num + 1
+        info[new_node] = new_snapshot.info[new_node]
+      end
+    else
+      local old_info = self.snapshot.info[cur]
+      for _ = 1, old_info.this_len do
+        table.insert(nodes, old_nodes[old_line_ptr])
+        old_line_ptr = old_line_ptr + 1
+        line_num = line_num + 1
+      end
+      info[cur].this_len = old_info.this_len
+      if cur.children and not cur.collapsed then
+        for _, child in ipairs(cur.children) do
+          traverse(child, depth + 1, cur)
+        end
+      end
+      info[cur].len = line_num - info[cur].start
     end
   end
+
+  traverse(self.root, 0, nil)
+  self.snapshot.len = line_num
+  self.snapshot.nodes = nodes
+  self.snapshot.info = info
 end
 
 ---@class dm.TreeViewParams

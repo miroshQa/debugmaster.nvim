@@ -41,10 +41,10 @@ scopes.toggle_variables = function(event)
   if s and cur.variablesReference > 0 and not cur.children then
     scopes.load_variables(s, cur, function()
       cur.collapsed = false
-      event.view:refresh()
+      event.view:refresh(cur)
     end)
   else
-    event.view:refresh()
+    event.view:refresh(cur)
   end
 end
 
