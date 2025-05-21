@@ -1,6 +1,3 @@
---TODO: Partial rendering. We already have stats for this
--- Need to develop this idea further
-
 local api = vim.api
 
 local tree = {}
@@ -33,16 +30,18 @@ local tree = {}
 ---@field collapsed boolean?
 ---@field children dm.TreeNode[]?
 
----@class dm.NodeRenderStat
----@field start number Start line number
----@field len number render len. end = start + len
+---@class dm.SnapshotNodeInfo
+---@field start number Starts with 1
+---@field len number
+---@field parent dm.TreeNode?
 
 ---@class dm.TreeRenderSnapshot
 ---@field root dm.TreeNode
----@field len number
+---@field start number Starts with 1
+---@field len number amount of lines including children
 ---@field buf number
----@field nodes_by_line table<number, dm.TreeNode> Starts with 1!
----@field stats table<dm.TreeNode, dm.NodeRenderStat>
+---@field nodes dm.TreeNode[] nodes[1] = first node in the buffer starting with the `start` line number
+---@field info table<dm.TreeNode, dm.SnapshotNodeInfo>
 local SnapshotMethods = {}
 ---@private
 SnapshotMethods.__index = SnapshotMethods
@@ -56,7 +55,7 @@ SnapshotMethods.__index = SnapshotMethods
 function SnapshotMethods:cur()
   assert(self.buf == api.nvim_win_get_buf(0), "current window buf must match snapshot buf!")
   local line = api.nvim_win_get_cursor(0)[1]
-  local cur = self.nodes_by_line[line]
+  local cur = self.nodes[line]
   assert(cur, "No node under cursor! This could only happen if buffer was modified since render!")
   return cur
 end
@@ -64,34 +63,40 @@ end
 ---@class dm.TreeRenderParams
 ---@field buf number
 ---@field root dm.TreeNode
+---@field start number? starts with 0 like in api.set_lines. 0 by default
+---@field end_ number? like in api.set_lines. -1 by default
 
 ---Render tree like structure conforming to the
 ---dm.TreeNode interface. Each node can contains children and collapsed fields
 ---interface (contract) doesn't require them to present
 ---in this case children are simply not rendered
----By default use tree.iter. It traverse all nodes if it has children. You can prevent node for
----being traversed by setting collapsed = true
+---It traverse all nodes if it has children. You can prevent node for being traversed by setting collapsed = true
 ---Returns the render snapshot, that can be used to retrieve node by line, etc
 ---@param opts dm.TreeRenderParams
 ---@return dm.TreeRenderSnapshot
 function tree.render(opts)
+  local start = opts.start or 0
+  local end_ = opts.end_ or -1
   local result_lines = {}
   ---@type {line: number, hl: string, col_start: number, col_end: number}[]
   local highlights = {}
-  local line_num = 1
-  local nodes_by_line = {}
-  ---@type table<dm.TreeNode, dm.NodeRenderStat>
-  local stats = {}
-
+  local line_num = start + 1
+  ---@type dm.TreeNode[]
+  local nodes = {}
+  ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
+  local info = {}
   local ns_id = api.nvim_create_namespace("")
+  ---@type table<dm.TreeNode, dm.TreeNode>
+  local parents = {}
 
-  for cur, depth, parent in tree.iter(opts.root) do
+  local function render(cur, depth, parent)
     ---@type dm.TreeNodeRenderEvent
     local event = { name = "render", cur = cur, depth = depth, parent = parent, out = {} }
-    stats[cur] = { len = 0, start = line_num }
+    info[cur] = { len = 0, start = line_num, parent = nil }
     if cur.handler then
       cur.handler(event)
     end
+
     local lines = event.out.lines or {}
     for _, line in ipairs(lines) do
       local line_text = ""
@@ -111,58 +116,45 @@ function tree.render(opts)
       end
 
       table.insert(result_lines, line_text)
-      nodes_by_line[line_num] = cur
-      stats[cur].len = stats[cur].len + 1
-      if parent then
-        stats[parent].len = stats[parent].len + 1
-      end
+      table.insert(nodes, cur)
       line_num = line_num + 1
     end
+
+    if cur.children and not cur.collapsed then
+      for _, child in ipairs(cur.children) do
+        render(child, depth + 1, cur)
+      end
+    end
+
+    info[cur].len = line_num - info[cur].start
   end
 
+  render(opts.root, 0, nil)
 
+  local len = line_num - (start + 1)
   local buf = opts.buf
-  api.nvim_set_option_value("modifiable", true, { buf = buf })
-  api.nvim_buf_set_lines(buf, 0, -1, false, result_lines)
-  api.nvim_set_option_value("modifiable", false, { buf = opts.buf })
-  for _, h in ipairs(highlights) do
-    api.nvim_buf_set_extmark(buf, ns_id, h.line - 1, h.col_start, {
-      end_col = h.col_end,
-      hl_group = h.hl
-    })
+  if len ~= 0 then
+    api.nvim_set_option_value("modifiable", true, { buf = buf })
+    api.nvim_buf_set_lines(buf, start, end_, false, result_lines)
+    api.nvim_set_option_value("modifiable", false, { buf = opts.buf })
+    for _, h in ipairs(highlights) do
+      api.nvim_buf_set_extmark(buf, ns_id, h.line - 1, h.col_start, {
+        end_col = h.col_end,
+        hl_group = h.hl
+      })
+    end
   end
 
   ---@type dm.TreeRenderSnapshot
   local snapshot = setmetatable({
     root = opts.root,
-    len = #result_lines,
+    start = start + 1,
+    len = len,
     buf = opts.buf,
-    nodes_by_line = nodes_by_line,
-    stats = stats,
+    nodes = nodes,
+    info = info,
   }, SnapshotMethods)
   return snapshot
-end
-
----parent must be nil only for a root element. Depth starts with 0
----@alias dm.TreeIterator fun(): cur: dm.TreeNode, depth: number, parent: dm.TreeNode?
-
----construct iterator over tree like structure
----@param root dm.TreeNode Iteration starts with this node
----@return dm.TreeIterator
-function tree.iter(root)
-  return coroutine.wrap(function()
-    ---@type fun(cur: dm.TreeNode, depth: number, parent: dm.TreeNode?)
-    local function traverse(cur, depth, parent)
-      coroutine.yield(cur, depth, parent)
-      local should_traverse_children = cur.children and not cur.collapsed
-      if should_traverse_children then
-        for _, child in ipairs(cur.children) do
-          traverse(child, depth + 1, cur)
-        end
-      end
-    end
-    traverse(root, 0, nil)
-  end)
 end
 
 ---@class dm.TreeView
@@ -177,19 +169,39 @@ TreeViewMethods.__index = TreeViewMethods
 ---TODO: return new snapshot? Override existing snapshot with old??? For partial rendering
 ---@param node dm.TreeNode?
 function TreeViewMethods:refresh(node)
-  self.snapshot = tree.render({
-    buf = self.buf,
-    root = node or self.root,
-  })
+  if not node then
+    self.snapshot = tree.render { buf = self.buf, root = self.root }
+  else
+    local info = self.snapshot.info[node]
+    local new_snapshot = tree.render {
+      root = node,
+      buf = self.buf,
+      start = info.start - 1,
+      end_ = info.start - 1 + info.len,
+    }
+
+    for i, n in ipairs(new_snapshot.nodes) do
+      self.snapshot.nodes[info.start + i] = n
+      self.snapshot.info[n] = new_snapshot.info[n]
+    end
+
+    local delta = info.len - new_snapshot.len
+    local parent = self.snapshot.info[node].parent
+    while parent do
+      self.snapshot.info[parent].len = self.snapshot.info[parent].len + delta
+      parent = self.snapshot.info[parent].parent
+    end
+  end
 end
 
 ---@class dm.TreeViewParams
 ---@field root dm.TreeNode
----@field keymaps string[] Those keymaps will trigger keymap event for underlying cursor node
+---@field keymaps string[]? Those keymaps will trigger keymap event for underlying cursor node
 
 tree.view = {}
 ---@param params dm.TreeViewParams
 function tree.view.new(params)
+  local keymaps = params.keymaps or {}
   local buf = vim.api.nvim_create_buf(false, true)
   ---@type dm.TreeView
   local self = setmetatable({
@@ -201,7 +213,7 @@ function tree.view.new(params)
     }),
   }, TreeViewMethods)
 
-  for _, key in pairs(params.keymaps) do
+  for _, key in pairs(keymaps) do
     local mode = "n"
     api.nvim_buf_set_keymap(buf, mode, key, "", {
       callback = function()

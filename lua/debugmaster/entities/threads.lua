@@ -18,8 +18,11 @@ local threads = {}
 
 ---@alias dm.ThreadsTreeNode dm.ThreadsNode | dm.FrameNode | dm.ThreadsRootNode
 
+local count = 0
 threads.thread_handler = tree.dispatcher.new {
   render = function(event)
+    print("thread renderred: " .. count)
+    count = count + 1
     local node = event.cur
     local icon = node.collapsed and "  " or "  "
     local thread_name = string.format("[%s] Thread name: %s", tostring(node.id), node.name)
