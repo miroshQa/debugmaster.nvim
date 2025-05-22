@@ -21,7 +21,6 @@ local threads = {}
 local count = 0
 threads.thread_handler = tree.dispatcher.new {
   render = function(event)
-    print("thread renderred: " .. count)
     count = count + 1
     local node = event.cur
     local icon = node.collapsed and "  " or "  "
@@ -51,6 +50,7 @@ threads.frame_handler = tree.dispatcher.new {
   keymaps = {
     ["<CR>"] = function(event)
       SessionManager.set_current_frame(event.cur)
+      event.view:refresh()
     end
   }
 }

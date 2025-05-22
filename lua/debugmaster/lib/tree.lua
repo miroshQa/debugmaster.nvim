@@ -170,12 +170,12 @@ end
 
 ---@class dm.TreeViewParams
 ---@field root dm.TreeNode
----@field keymaps string[]? Those keymaps will trigger keymap event for underlying cursor node
+---@field keymaps string[] Those keymaps will trigger keymap event for underlying cursor node
 
 tree.view = {}
 ---@param params dm.TreeViewParams
 function tree.view.new(params)
-  local keymaps = params.keymaps or {}
+  local keymaps = params.keymaps
   local buf = vim.api.nvim_create_buf(false, true)
   ---@type dm.TreeView
   local self = setmetatable({

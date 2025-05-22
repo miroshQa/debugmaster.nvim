@@ -63,7 +63,7 @@ end
 ---@return boolean
 function SesssionsManager.is_current_frame(frame)
   local s = dap.session()
-  if s then return s.current_frame.id == frame.id else return false end
+  if s and s.current_frame then return s.current_frame.id == frame.id else return false end
 end
 
 function SesssionsManager.run_last_cached()
@@ -134,8 +134,9 @@ function SesssionsManager.list_breakpoints()
   return res
 end
 
-function SesssionsManager.set_active()
+function SesssionsManager.set_active(s)
   api.nvim_exec_autocmds("User", { pattern = "DmSessionChanged" })
+  dap.set_session(s)
 end
 
 return SesssionsManager

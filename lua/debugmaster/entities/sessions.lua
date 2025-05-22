@@ -1,5 +1,6 @@
 local dap = require("dap")
 local tree = require("debugmaster.lib.tree")
+local SessionsManager = require("debugmaster.managers.SessionsManager")
 
 local sessions = {}
 
@@ -24,9 +25,11 @@ sessions.session_handler = tree.dispatcher.new {
   ---@field cur dm.SessionNode
   ---@param event dm.SessionRenderEvent
   render = function(event)
+    local cur_session = dap.session()
     local node = event.cur
+    local icon = (cur_session or {}).id == node.id and "->" or ""
     event.out.lines = {
-      { { string.format("%s. ", node.id) }, { node.config.name } },
+      { { string.format("%s %s. %s ", icon, node.id, node.config.name) } },
     }
   end,
   ---@class dm.SessionKeymapEvent: dm.TreeNodeKeymapEvent
@@ -34,7 +37,9 @@ sessions.session_handler = tree.dispatcher.new {
   ---@type table<string, fun(event: dm.SessionKeymapEvent)>
   keymaps = {
     ["<CR>"] = function(event)
-      print("session switching isn't implemented yet")
+      dap.set_session(event.cur)
+      SessionsManager.set_active(event.cur)
+      event.view:refresh()
     end
   }
 }

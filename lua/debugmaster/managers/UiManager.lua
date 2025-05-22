@@ -38,7 +38,7 @@ UiManager.terminal = (function()
     pattern = "DmSessionChanged",
     callback = vim.schedule_wrap(function()
       local session = assert(dap.session())
-      local new_buf = SessionsManager.get(session).terminal or default_buf
+      local new_buf = SessionsManager.get_terminal(session) or default_buf
       comp.buf = new_buf
       api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
     end),
@@ -173,6 +173,11 @@ UiManager.threads = (function()
     end
   }
 
+  local view = tree.view.new {
+    root = root,
+    keymaps = { "<CR>" }
+  }
+
   local update_tree = function()
     local s = dap.session()
     if not s then
@@ -200,6 +205,7 @@ UiManager.threads = (function()
 
   dap.listeners.after.stackTrace["threads_widget"] = update_tree
   return {
+    view = view,
     name = "[T]hreads",
     root = root,
   }

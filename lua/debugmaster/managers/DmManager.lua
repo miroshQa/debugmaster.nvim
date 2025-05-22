@@ -149,7 +149,9 @@ local float_widgets = {
       key = "df",
       action = function()
         local UiManager = require("debugmaster.managers.UiManager")
-        view.popup.new { buf = UiManager.threads.buf }
+        local threads = UiManager.threads
+        threads.view:refresh()
+        view.popup.new { buf = threads.view.buf }
       end,
       desc = "Frames and threads widget"
     },
