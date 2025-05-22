@@ -33,7 +33,7 @@ local tree = {}
 ---@class dm.SnapshotNodeInfo
 ---@field start number Starts with 1
 ---@field len number amount of lines including children
----@field this_len number len only of this node not including children
+---@field depth number
 ---@field parent dm.TreeNode?
 
 ---@class dm.TreeRenderSnapshot
@@ -67,6 +67,7 @@ end
 ---@field start number? starts with 0 like in api.set_lines. 0 by default
 ---@field end_ number? like in api.set_lines. -1 by default
 ---@field depth number? starting depth
+---@field parent dm.TreeNode? start parent for root
 
 ---Render tree like structure conforming to the
 ---dm.TreeNode interface. Each node can contains children and collapsed fields
@@ -94,7 +95,7 @@ function tree.render(opts)
     end
 
     local lines = event.out.lines or {}
-    info[cur] = { len = 0, start = line_num, parent = parent, this_len = #lines }
+    info[cur] = { depth = depth, len = 0, start = line_num, parent = parent }
     for _, line in ipairs(lines) do
       local line_text = ""
       local current_col = 0
@@ -126,7 +127,7 @@ function tree.render(opts)
     info[cur].len = line_num - info[cur].start
   end
 
-  render(opts.root, opts.depth or 0, nil)
+  render(opts.root, opts.depth or 0, opts.parent)
 
   local len = line_num - (start + 1)
   local buf = opts.buf
@@ -169,52 +170,47 @@ function TreeViewMethods:refresh(node)
     return
   end
 
-  -- PARTIAL RERENDERING IMPLEMENTATION
-  local old_nodes = self.snapshot.nodes
-  local line_num = 1
-  local old_line_ptr = 1
-  local nodes = {} ---@type dm.TreeNode[]
-  local info = {} ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
+  -- PARTIAL RENDERNING IMPLEMENTATION
+  -- need to improve naming
+  local node_info = self.snapshot.info[node]
+  local node_snapshot = tree.render {
+    buf = self.buf,
+    root = node,
+    depth = node_info.depth,
+    parent = node_info.parent,
+    start = node_info.start - 1,
+    end_ = node_info.start - 1 + node_info.len
+  }
+  local new_node_info = node_snapshot.info[node]
+  local delta = new_node_info.len - node_info.len
 
-  local function traverse(cur, depth, parent)
-    info[cur] = { len = 0, start = line_num, parent = parent, this_len = 0 }
-    if cur == node then
-      local node_info = self.snapshot.info[node]
-      local new_snapshot = tree.render {
-        root = cur,
-        buf = self.buf,
-        start = node_info.start - 1,
-        end_ = node_info.start - 1 + node_info.len,
-        depth = depth,
-      }
-      info[cur].len = new_snapshot.len
-      info[cur].this_len = new_snapshot.info[cur].this_len
-      for _, new_node in ipairs(new_snapshot.nodes) do
-        table.insert(nodes, new_node)
-        line_num = line_num + 1
-        info[new_node] = new_snapshot.info[new_node]
-      end
-    else
-      local old_info = self.snapshot.info[cur]
-      for _ = 1, old_info.this_len do
-        table.insert(nodes, old_nodes[old_line_ptr])
-        old_line_ptr = old_line_ptr + 1
-        line_num = line_num + 1
-      end
-      info[cur].this_len = old_info.this_len
-      if cur.children and not cur.collapsed then
-        for _, child in ipairs(cur.children) do
-          traverse(child, depth + 1, cur)
-        end
-      end
-      info[cur].len = line_num - info[cur].start
+  -- 1. Increase len for parents
+  if delta ~= 0 then
+    local parent = node_info.parent
+    while parent do
+      self.snapshot.info[parent].len = self.snapshot.info[parent].len + delta
+      parent = self.snapshot.info[parent].parent
     end
   end
 
-  traverse(self.root, 0, nil)
-  self.snapshot.len = line_num
+  -- 2. Construct nodes array for the view snapshot again
+  local nodes = {}
+  for i = 1, node_info.start - 1 do
+    table.insert(nodes, self.snapshot.nodes[i])
+  end
+
+  for _, new_node in ipairs(node_snapshot.nodes) do
+    table.insert(nodes, new_node)
+    self.snapshot.info[new_node] = node_snapshot.info[new_node]
+  end
+
+  for i = node_info.start + node_info.len, self.snapshot.len do
+    local cur_node = self.snapshot.nodes[i]
+    table.insert(nodes, cur_node)
+    self.snapshot.info[cur_node].start = self.snapshot.info[cur_node].start + delta
+  end
   self.snapshot.nodes = nodes
-  self.snapshot.info = info
+  self.snapshot.len = self.snapshot.len + delta
 end
 
 ---@class dm.TreeViewParams

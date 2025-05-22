@@ -107,6 +107,13 @@ T["it renders"]["partially"] = function()
   expect.equality(view.snapshot.info[root].len, 5)
   local c = root.children[2]
   expect.equality(view.snapshot.info[c].start, 3)
+
+  root.children[1].collapsed = false
+  view:refresh(root.children[1])
+  expect.equality(view.snapshot.len, 7)
+  expect.equality(view.snapshot.info[root].len, 7)
+  expect.equality(view.snapshot.info[root.children[1]].len, 3)
+  expect_render(view, { "a", "b", "b1", "b2", "c", "c1", "c2" })
 end
 
 
