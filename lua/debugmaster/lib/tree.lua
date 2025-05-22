@@ -42,7 +42,7 @@ local tree = {}
 ---@field len number amount of lines including children
 ---@field buf number
 ---@field nodes dm.TreeNode[] nodes[1] = first node in the buffer starting with the `start` line number
----@field info table<dm.TreeNode, dm.SnapshotNodeInfo>
+---@field nodes_info table<dm.TreeNode, dm.SnapshotNodeInfo>
 local SnapshotMethods = {}
 ---@private
 SnapshotMethods.__index = SnapshotMethods
@@ -84,7 +84,7 @@ function tree.render(opts)
   local highlights = {} ---@type {line: number, hl: string, col_start: number, col_end: number}[]
   local line_num = start + 1
   local nodes = {} ---@type dm.TreeNode[]
-  local info = {} ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
+  local nodes_info = {} ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
   local ns_id = api.nvim_create_namespace("")
 
   local function render(cur, depth, parent)
@@ -95,7 +95,7 @@ function tree.render(opts)
     end
 
     local lines = event.out.lines or {}
-    info[cur] = { depth = depth, len = 0, start = line_num, parent = parent }
+    nodes_info[cur] = { depth = depth, len = 0, start = line_num, parent = parent }
     for _, line in ipairs(lines) do
       local line_text = ""
       local current_col = 0
@@ -124,7 +124,7 @@ function tree.render(opts)
       end
     end
 
-    info[cur].len = line_num - info[cur].start
+    nodes_info[cur].len = line_num - nodes_info[cur].start
   end
 
   render(opts.root, opts.depth or 0, opts.parent)
@@ -150,7 +150,7 @@ function tree.render(opts)
     len = len,
     buf = opts.buf,
     nodes = nodes,
-    info = info,
+    nodes_info = nodes_info,
   }, SnapshotMethods)
   return snapshot
 end
@@ -165,52 +165,7 @@ TreeViewMethods.__index = TreeViewMethods
 
 ---@param node dm.TreeNode?
 function TreeViewMethods:refresh(node)
-  if not node then
-    self.snapshot = tree.render { buf = self.buf, root = self.root }
-    return
-  end
-
-  -- PARTIAL RENDERNING IMPLEMENTATION
-  -- need to improve naming
-  local node_info = self.snapshot.info[node]
-  local node_snapshot = tree.render {
-    buf = self.buf,
-    root = node,
-    depth = node_info.depth,
-    parent = node_info.parent,
-    start = node_info.start - 1,
-    end_ = node_info.start - 1 + node_info.len
-  }
-  local new_node_info = node_snapshot.info[node]
-  local delta = new_node_info.len - node_info.len
-
-  -- 1. Increase len for parents
-  if delta ~= 0 then
-    local parent = node_info.parent
-    while parent do
-      self.snapshot.info[parent].len = self.snapshot.info[parent].len + delta
-      parent = self.snapshot.info[parent].parent
-    end
-  end
-
-  -- 2. Construct nodes array for the view snapshot again
-  local nodes = {}
-  for i = 1, node_info.start - 1 do
-    table.insert(nodes, self.snapshot.nodes[i])
-  end
-
-  for _, new_node in ipairs(node_snapshot.nodes) do
-    table.insert(nodes, new_node)
-    self.snapshot.info[new_node] = node_snapshot.info[new_node]
-  end
-
-  for i = node_info.start + node_info.len, self.snapshot.len do
-    local cur_node = self.snapshot.nodes[i]
-    table.insert(nodes, cur_node)
-    self.snapshot.info[cur_node].start = self.snapshot.info[cur_node].start + delta
-  end
-  self.snapshot.nodes = nodes
-  self.snapshot.len = self.snapshot.len + delta
+  self.snapshot = tree.render { buf = self.buf, root = self.root }
 end
 
 ---@class dm.TreeViewParams

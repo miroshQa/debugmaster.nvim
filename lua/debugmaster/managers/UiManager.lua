@@ -78,13 +78,13 @@ UiManager.scopes = (function()
     scopes.fetch_frame(s, s.current_frame, function(to)
       if not root.children then -- first init
         root.children = { to }
-        UiManager.dashboard.view:refresh()
+        UiManager.dashboard.view:refresh(root)
         return
       end
       local from = root.children[1]
       scopes.sync_frame(s, from, to, function()
         root.children = { to }
-        UiManager.dashboard.view:refresh()
+        UiManager.dashboard.view:refresh(root)
       end)
     end)
   end
@@ -112,7 +112,7 @@ UiManager.sessions = (function()
       s.handler = sessions.session_handler
       table.insert(root.children, s)
     end
-    UiManager.dashboard.view:refresh()
+    UiManager.dashboard.view:refresh(root)
   end
 
   dap.listeners.after.launch["random123"] = refresher
@@ -138,7 +138,7 @@ UiManager.breakpoints = (function()
     pattern = "DmBpChanged",
     callback = function()
       root.children = breakpoints.build_bps(SessionsManager.list_breakpoints())
-      UiManager.dashboard.view:refresh()
+      UiManager.dashboard.view:refresh(root)
     end
   })
 
@@ -190,7 +190,7 @@ UiManager.threads = (function()
       end
       table.insert(root.children, thread)
     end
-    UiManager.dashboard.view:refresh()
+    UiManager.dashboard.view:refresh(root)
   end
 
   api.nvim_create_autocmd("User", {

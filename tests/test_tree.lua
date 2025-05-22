@@ -75,6 +75,8 @@ end
 
 
 T["it renders"]["partially"] = function()
+  -- not relevant anymore because I removed partial renredering
+  -- but let's keep it if I decide to try again
   local root = {
     value = "a",
     children = {
