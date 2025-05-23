@@ -270,11 +270,11 @@ local misc_group = {
     {
       key = "x",
       action = function()
-        local state = require("debugmaster.state")
+        local UiManager = require("debugmaster.managers.UiManager")
         local text = vim.fn.getreg('"')
         require("dap").repl.execute("\n" .. text)
-        state.sidepanel:set_active_with_open(state.repl)
-        api.nvim_buf_call(state.repl.buf, function()
+        UiManager.sidepanel:set_active_with_open(UiManager.repl)
+        api.nvim_buf_call(UiManager.repl.buf, function()
           vim.cmd("normal G")
         end)
       end,

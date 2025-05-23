@@ -50,10 +50,9 @@ T["it renders"] = new_set()
 
 T["it renders"]["nothing"] = function()
   local root = { children = { {}, {} } }
-  local view = tree.view.new { root = root }
-  expect.equality(view.snapshot.len, 0)
-  expect.equality(#view.snapshot.nodes, 0)
-  expect.equality(view.snapshot.start, 1)
+  local view = tree.view.new { root = root, keymaps = {} }
+  expect.equality(view.snapshot.nodes_info[view.root].len, 0)
+  expect.equality(view.snapshot.nodes_info[view.root].extmark_id, 0)
 end
 
 
@@ -66,11 +65,11 @@ T["it renders"]["tree"] = function()
     }
   }
   handerlify(root, handler)
-  local view = tree.view.new { root = root }
-  expect.equality(view.snapshot.len, 3)
-  expect.equality(#view.snapshot.nodes, 3)
-  expect.equality(view.snapshot.nodes[2].value, "b")
-  expect.equality(view.snapshot.nodes[1], view.root)
+  local view = tree.view.new { root = root, keymaps = {} }
+  expect.equality(view.snapshot.nodes_info[view.root].len, 3)
+  expect.equality(view.snapshot:get(0).value, "a")
+  expect.equality(view.snapshot:get(1).value, "b")
+  expect.equality(view.snapshot:get(2).value, "c")
 end
 
 
@@ -97,24 +96,20 @@ T["it renders"]["partially"] = function()
     },
   }
   handerlify(root, handler)
-  local view = tree.view.new { root = root }
-  expect.equality(view.snapshot.len, 7)
-  expect.equality(view.snapshot.info[root].len, 7)
-  expect.equality(view.snapshot.info[root.children[1]].len, 3)
+  local view = tree.view.new { root = root, keymaps = {} }
+  expect.equality(view.snapshot.nodes_info[view.root].len, 7)
+  expect.equality(view.snapshot.nodes_info[root.children[1]].len, 3)
   expect_render(view, { "a", "b", "b1", "b2", "c", "c1", "c2" })
 
   root.children[1].collapsed = true
   view:refresh(root.children[1])
   expect_render(view, { "a", "b", "c", "c1", "c2" })
-  expect.equality(view.snapshot.info[root].len, 5)
-  local c = root.children[2]
-  expect.equality(view.snapshot.info[c].start, 3)
+  expect.equality(view.snapshot.nodes_info[root].len, 5)
 
   root.children[1].collapsed = false
   view:refresh(root.children[1])
-  expect.equality(view.snapshot.len, 7)
-  expect.equality(view.snapshot.info[root].len, 7)
-  expect.equality(view.snapshot.info[root.children[1]].len, 3)
+  expect.equality(view.snapshot.nodes_info[view.root].len, 7)
+  expect.equality(view.snapshot.nodes_info[root.children[1]].len, 3)
   expect_render(view, { "a", "b", "b1", "b2", "c", "c1", "c2" })
 end
 

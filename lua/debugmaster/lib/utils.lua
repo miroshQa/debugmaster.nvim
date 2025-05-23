@@ -48,4 +48,27 @@ function utils.set_local_buf_win_keymap(win, key, mode, callback)
   end, { buffer = buf })
 end
 
+function utils.get_string_hl(str, lang)
+  local query = assert(vim.treesitter.query.get(lang, "highlights"))
+  local lang_tree = vim.treesitter.get_string_parser(str, lang)
+  local ts_tree = lang_tree:parse()[1]
+
+  local prev_r = 1
+  local result = {}
+  for i, n, _ in query:iter_captures(ts_tree:root(), str) do
+    local cap = query.captures[i]
+    local _, _, l, _, _, r = n:range(true)
+
+    if prev_r <= l then
+      table.insert(result, { str:sub(prev_r, l) })
+    end
+    table.insert(result, { str:sub(l + 1, r), ("@%s.%s"):format(cap, lang) })
+    prev_r = r + 1
+  end
+  if prev_r <= #str then
+    table.insert(result, { str:sub(prev_r) })
+  end
+  return result
+end
+
 return utils

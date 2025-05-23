@@ -31,17 +31,16 @@ local tree = {}
 ---@field children dm.TreeNode[]?
 
 ---@class dm.SnapshotNodeInfo
----@field start number Starts with 1
+---@field extmark_id number
 ---@field len number amount of lines including children
 ---@field depth number
 ---@field parent dm.TreeNode?
 
 ---@class dm.TreeRenderSnapshot
----@field root dm.TreeNode
----@field start number Starts with 1
----@field len number amount of lines including children
 ---@field buf number
----@field nodes dm.TreeNode[] nodes[1] = first node in the buffer starting with the `start` line number
+---@field root dm.TreeNode
+---@field extmarks_ns number
+---@field node_by_extmark_id table<number, dm.TreeNode>
 ---@field nodes_info table<dm.TreeNode, dm.SnapshotNodeInfo>
 local SnapshotMethods = {}
 ---@private
@@ -53,10 +52,18 @@ SnapshotMethods.__index = SnapshotMethods
 ---Throw an error if node doesn't exist. The only way it can happen if buffer was modified
 ---since snapshot creation. Hence you should track buffer changes by yourself
 ---and get rid of this snapshot if it happened
-function SnapshotMethods:cur()
-  assert(self.buf == api.nvim_win_get_buf(0), "current window buf must match snapshot buf!")
-  local line = api.nvim_win_get_cursor(0)[1]
-  local cur = self.nodes[line]
+---@param line number? starts with 0
+function SnapshotMethods:get(line)
+  if not line then
+    assert(self.buf == api.nvim_win_get_buf(0), "current window buf must match snapshot buf!")
+    line = api.nvim_win_get_cursor(0)[1] - 1
+  end
+  local mark = api.nvim_buf_get_extmarks(self.buf, self.extmarks_ns, { line, 0 }, { line, 0 }, {
+    limit = 1,
+    overlap = true,
+  })[1]
+  assert(mark, "no mark!")
+  local cur = self.node_by_extmark_id[mark[1]]
   assert(cur, "No node under cursor! This could only happen if buffer was modified since render!")
   return cur
 end
@@ -75,17 +82,17 @@ end
 ---in this case children are simply not rendered
 ---It traverse all nodes if it has children. You can prevent node for being traversed by setting collapsed = true
 ---Returns the render snapshot, that can be used to retrieve node by line, etc
----@param opts dm.TreeRenderParams
+---@param params dm.TreeRenderParams
 ---@return dm.TreeRenderSnapshot
-function tree.render(opts)
-  local start = opts.start or 0
-  local end_ = opts.end_ or -1
+function tree.render(params)
+  local buf = params.buf
+  local start = params.start or 0
+  local end_ = params.end_ or -1
   local result_lines = {}
+  local line_num = start
   local highlights = {} ---@type {line: number, hl: string, col_start: number, col_end: number}[]
-  local line_num = start + 1
-  local nodes = {} ---@type dm.TreeNode[]
   local nodes_info = {} ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
-  local ns_id = api.nvim_create_namespace("")
+  local marks = {} ---@type {node: dm.TreeNode, row: number, end_row: number}[]
 
   local function render(cur, depth, parent)
     ---@type dm.TreeNodeRenderEvent
@@ -94,8 +101,12 @@ function tree.render(opts)
       cur.handler(event)
     end
 
+    local node_start = line_num
     local lines = event.out.lines or {}
-    nodes_info[cur] = { depth = depth, len = 0, start = line_num, parent = parent }
+    nodes_info[cur] = { depth = depth, len = 0, extmark_id = 0, parent = parent }
+    if #lines ~= 0 then
+      table.insert(marks, { node = cur, row = line_num, end_row = line_num + #lines - 1 })
+    end
     for _, line in ipairs(lines) do
       local line_text = ""
       local current_col = 0
@@ -114,7 +125,6 @@ function tree.render(opts)
       end
 
       table.insert(result_lines, line_text)
-      table.insert(nodes, cur)
       line_num = line_num + 1
     end
 
@@ -124,32 +134,36 @@ function tree.render(opts)
       end
     end
 
-    nodes_info[cur].len = line_num - nodes_info[cur].start
+    nodes_info[cur].len = line_num - node_start
   end
 
-  render(opts.root, opts.depth or 0, opts.parent)
+  render(params.root, params.depth or 0, params.parent)
 
-  local len = line_num - (start + 1)
-  local buf = opts.buf
-  if len ~= 0 then
-    api.nvim_set_option_value("modifiable", true, { buf = buf })
-    api.nvim_buf_set_lines(buf, start, end_, false, result_lines)
-    api.nvim_set_option_value("modifiable", false, { buf = opts.buf })
-    for _, h in ipairs(highlights) do
-      api.nvim_buf_set_extmark(buf, ns_id, h.line - 1, h.col_start, {
-        end_col = h.col_end,
-        hl_group = h.hl
-      })
-    end
+  local extmarks_ns = api.nvim_create_namespace("")
+  local hl_ns = api.nvim_create_namespace("")
+  api.nvim_set_option_value("modifiable", true, { buf = buf })
+  api.nvim_buf_set_lines(buf, start, end_, false, result_lines)
+  api.nvim_set_option_value("modifiable", false, { buf = params.buf })
+  for _, h in ipairs(highlights) do
+    api.nvim_buf_set_extmark(buf, hl_ns, h.line, h.col_start, {
+      end_col = h.col_end,
+      hl_group = h.hl
+    })
+  end
+
+  local node_by_extmark_id = {}
+  for _, mark in ipairs(marks) do
+    local id = api.nvim_buf_set_extmark(buf, extmarks_ns, mark.row, 0, { end_row = mark.end_row })
+    nodes_info[mark.node].extmark_id = id
+    node_by_extmark_id[id] = mark.node
   end
 
   ---@type dm.TreeRenderSnapshot
   local snapshot = setmetatable({
-    root = opts.root,
-    start = start + 1,
-    len = len,
-    buf = opts.buf,
-    nodes = nodes,
+    buf = params.buf,
+    root = params.root,
+    extmarks_ns = extmarks_ns,
+    node_by_extmark_id = node_by_extmark_id,
     nodes_info = nodes_info,
   }, SnapshotMethods)
   return snapshot
@@ -191,7 +205,7 @@ function tree.view.new(params)
     local mode = "n"
     api.nvim_buf_set_keymap(buf, mode, key, "", {
       callback = function()
-        local cur = self.snapshot:cur()
+        local cur = self.snapshot:get()
         ---@type dm.TreeNodeKeymapEvent
         local event = { name = "keymap", cur = cur, key = key, view = self }
         cur.handler(event)
