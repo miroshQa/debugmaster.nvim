@@ -1,25 +1,22 @@
 local dap = require("dap")
-local view = require("debugmaster.lib.view")
 local tree = require("debugmaster.lib.tree")
 local dispatcher = tree.dispatcher
 
 local scopes = {}
 
 
----@class dm.ScopesNode: dap.Scope
----@field kind "scope"
+---@class dm.ScopesNode: dap.Scope, dm.TreeNode
 ---@field children dm.VariablesNode[]? no children means not loaded
 ---@field collapsed boolean
 ---@field child_by_name table<string, dm.VariablesNode>
 
----@class dm.VariablesNode: dap.Variable
----@field kind "var"
+---@class dm.VariablesNode: dap.Variable, dm.TreeNode
 ---@field children dm.VariablesNode[]? no children means not loaded
 ---@field collapsed boolean
 ---@field child_by_name table<string, dm.VariablesNode>
 
----@alias dm.ScopesRoot {kind: "root", children: dm.StackFrameNode[], expanded: true}
----@alias dm.StackFrameNode {kind: "frame", children: dm.ScopesNode[], child_by_name: table<string, dm.ScopesNode>, expanded: true}
+---@alias dm.ScopesRoot {children: dm.StackFrameNode[]}
+---@alias dm.StackFrameNode {children: dm.ScopesNode[], child_by_name: table<string, dm.ScopesNode>}
 ---@alias dm.ScopesTreeNode dm.VariablesNode | dm.ScopesNode | dm.StackFrameNode | dm.ScopesRoot
 
 scopes.types_to_hl_group = {
@@ -33,41 +30,36 @@ scopes.types_to_hl_group = {
   ["function"] = "Function",
 }
 
-scopes.toggle_variables = function(event)
-  ---@type dm.VariablesNode | dm.ScopesNode
-  local cur = event.cur
+scopes.toggle_variables = function(node, event)
   local s = dap.session()
-  cur.collapsed = not cur.collapsed
-  if s and cur.variablesReference > 0 and not cur.children then
-    scopes.load_variables(s, cur, function()
-      cur.collapsed = false
-      event.view:refresh(cur)
+  node.collapsed = not node.collapsed
+  if s and node.variablesReference > 0 and not node.children then
+    scopes.load_variables(s, node, function()
+      node.collapsed = false
+      event.view:refresh(node)
     end)
   else
-    event.view:refresh(cur)
+    event.view:refresh(node)
   end
 end
 
 scopes.root_handler = dispatcher.new {
-  render = function(event)
+  render = function(node, event)
     event.out.lines = {
       { { "SCOPES:", "WarningMsg" }, },
-      { { "Expand node - <CR>" } }
+      { { "Expand node - <CR>", "Comment" } }
     }
   end,
   keymaps = {}
 }
 
 scopes.scope_handler = dispatcher.new {
-  ---@class dm.ScopeNodeRenderEvent: dm.TreeNodeRenderEvent
-  ---@field cur dm.ScopesNode
-  ---@param event dm.ScopeNodeRenderEvent
-  render = function(event)
-    local cur = event.cur
-    local icon = cur.collapsed and " " or " "
-    icon = cur.variablesReference == 0 and "" or icon
+  ---@param node dm.ScopesNode
+  render = function(node, event)
+    local icon = node.collapsed and " " or " "
+    icon = node.variablesReference == 0 and "" or icon
     event.out.lines = {
-      { { icon }, { cur.name } },
+      { { icon }, { node.name } },
     }
   end,
   keymaps = {
@@ -76,11 +68,8 @@ scopes.scope_handler = dispatcher.new {
 }
 
 scopes.var_handler = dispatcher.new {
-  ---@class dm.VarsNodeRenderEvent: dm.TreeNodeRenderEvent
-  ---@field cur dm.VariablesNode
-  ---@param event dm.VarsNodeRenderEvent
-  render = function(event)
-    local node = event.cur
+  ---@param node dm.VariablesNode
+  render = function(node, event)
     local icon = node.collapsed and " " or " "
     icon = node.variablesReference == 0 and "" or icon
     local indent = string.rep("  ", event.depth)
@@ -93,7 +82,7 @@ scopes.var_handler = dispatcher.new {
   }
 }
 
----Load varialles. Erase all previous children. Cb called on done. Set expanded = true
+---Load varialles. Erase all previous children. Cb called on done.
 ---@param s dap.Session
 ---@param target dm.VariablesNode | dm.ScopesNode
 ---@param cb fun()
@@ -107,7 +96,6 @@ function scopes.load_variables(s, target, cb)
     ---@type dm.VariablesNode[]
     local vars = result.variables
     for _, var in ipairs(vars) do
-      var.kind = "var"
       var.handler = scopes.var_handler
       target.child_by_name[var.name] = var
       table.insert(target.children, var)
@@ -116,32 +104,13 @@ function scopes.load_variables(s, target, cb)
   end)
 end
 
----Load varialles. Erase all previous children. Cb called on done
----This action pretty long time. Should add progress integration with fidget
----@param s dap.Session
----@param target dm.VariablesNode | dm.ScopesNode
----@param cb fun()
--- function scopes.resolve_variables_recursive(s, target, cb)
---   scopes.resolve_variables(s, target, function()
---     local await_count = #target.children
---     for _, child in ipairs(target.children) do
---       scopes.resolve_variables_recursive(s, child, function()
---         await_count = await_count - 1
---         if await_count == 0 then
---           cb()
---         end
---       end)
---     end
---   end)
--- end
-
 ---Loads all scopes. Return frame  on done via cb
 ---@param s dap.Session
 ---@param frame dap.StackFrame
 ---@param cb fun(root: dm.StackFrameNode)
 function scopes.fetch_frame(s, frame, cb)
   ---@type dm.StackFrameNode
-  local root = { kind = "frame", children = {}, expanded = true, child_by_name = {} }
+  local root = { kind = "frame", children = {}, child_by_name = {} }
   ---@param err any
   ---@param result dap.ScopesResponse
   s:request("scopes", { frameId = frame.id }, function(err, result)
@@ -149,7 +118,6 @@ function scopes.fetch_frame(s, frame, cb)
     local scp = result.scopes
     local await_count = #scp
     for _, scope in ipairs(scp) do
-      scope.kind = "scope"
       scope.children = {}
       scope.handler = scopes.scope_handler
       scope.collapsed = scope.name ~= "Locals"

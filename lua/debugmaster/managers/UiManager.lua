@@ -162,15 +162,8 @@ UiManager.threads = (function()
   local threads = require("debugmaster.entities.threads")
   ---@type dm.TreeNode
   local root = {
-    kind = "root",
     children = {},
-    handler = function(event)
-      if event.name == "render" then
-        event.out.lines = {
-          { { "THREADS", "WarningMsg" } }
-        }
-      end
-    end
+    handler = threads.root_handler,
   }
 
   local view = tree.view.new {
@@ -185,11 +178,9 @@ UiManager.threads = (function()
     end
     root.children = {}
     for _, thread in pairs(s.threads --[=[@as dm.ThreadsNode[]]=]) do
-      thread.kind = "thread"
       thread.handler = threads.thread_handler
       thread.children = {}
       for _, frame in ipairs(thread.frames --[=[@as dm.FrameNode[]]=]) do
-        frame.kind = "frame"
         frame.handler = threads.frame_handler
         table.insert(thread.children, frame)
       end

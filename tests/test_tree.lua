@@ -23,7 +23,7 @@ end
 ---@type dm.TreeNodeEventHandler
 local generic_handler = function(event)
   if event.name == "render" then
-    event.out.lines = { { { event.cur.value } } }
+    event.out.lines = { { { event.node.value } } }
   end
 end
 
