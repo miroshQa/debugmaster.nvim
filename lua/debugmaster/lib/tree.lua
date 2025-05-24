@@ -75,6 +75,7 @@ end
 ---@field end_ number? like in api.set_lines. -1 by default
 ---@field depth number? starting depth
 ---@field parent dm.TreeNode? start parent for root
+---@field base? dm.TreeRenderSnapshot base snapshot
 
 ---Render tree like structure conforming to the
 ---dm.TreeNode interface. Each node can contains children and collapsed fields
@@ -85,13 +86,14 @@ end
 ---@param params dm.TreeRenderParams
 ---@return dm.TreeRenderSnapshot
 function tree.render(params)
+  local base = params.base or {}
   local buf = params.buf
   local start = params.start or 0
   local end_ = params.end_ or -1
   local result_lines = {}
   local line_num = start
   local highlights = {} ---@type {line: number, hl: string, col_start: number, col_end: number}[]
-  local nodes_info = {} ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
+  local nodes_info = base.nodes_info or {} ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
   local marks = {} ---@type {node: dm.TreeNode, row: number, end_row: number}[]
 
   local function render(cur, depth, parent)
@@ -139,21 +141,21 @@ function tree.render(params)
 
   render(params.root, params.depth or 0, params.parent)
 
-  local extmarks_ns = api.nvim_create_namespace("")
   local hl_ns = api.nvim_create_namespace("")
   api.nvim_set_option_value("modifiable", true, { buf = buf })
   api.nvim_buf_set_lines(buf, start, end_, false, result_lines)
   api.nvim_set_option_value("modifiable", false, { buf = params.buf })
   for _, h in ipairs(highlights) do
-    api.nvim_buf_set_extmark(buf, hl_ns, h.line, h.col_start, {
-      end_col = h.col_end,
-      hl_group = h.hl
-    })
+    api.nvim_buf_set_extmark(buf, hl_ns, h.line, h.col_start, { end_col = h.col_end, hl_group = h.hl })
   end
 
-  local node_by_extmark_id = {}
+  local extmarks_ns = base.extmarks_ns or api.nvim_create_namespace("")
+  local node_by_extmark_id = base.node_by_extmark_id or {}
   for _, mark in ipairs(marks) do
-    local id = api.nvim_buf_set_extmark(buf, extmarks_ns, mark.row, 0, { end_row = mark.end_row })
+    local id = api.nvim_buf_set_extmark(buf, extmarks_ns, mark.row, 0, {
+      end_row = mark.end_row,
+      end_right_gravity = true, -- when we remove lines before this mark, end shouldn't shift backward. that is relevant only when end_row == mark.row
+    })
     nodes_info[mark.node].extmark_id = id
     node_by_extmark_id[id] = mark.node
   end
@@ -179,7 +181,38 @@ TreeViewMethods.__index = TreeViewMethods
 
 ---@param node dm.TreeNode?
 function TreeViewMethods:refresh(node)
-  self.snapshot = tree.render { buf = self.buf, root = self.root }
+  node = node or self.root
+  local snapshot = self.snapshot
+  local nodes_info = snapshot.nodes_info
+  local buf = self.buf
+  local node_info = snapshot.nodes_info[node] ---@type dm.SnapshotNodeInfo
+  local id = node_info.extmark_id
+  -- we can't refresh this node because there is no extmark for this node
+  -- we can eliminate this restriction by refreshing first non empty parrent or root as fallback in the future
+  assert(id ~= 0, "you can't refresh node that returned 0 lines!")
+  local start = api.nvim_buf_get_extmark_by_id(buf, snapshot.extmarks_ns, id, {})[1]
+  local len = node_info.len
+  assert(len ~= 0, "len must be not equal 0")
+  local end_ = start + len
+  api.nvim_buf_clear_namespace(buf, snapshot.extmarks_ns, start, end_)
+  tree.render {
+    root = node,
+    buf = buf,
+    base = snapshot,
+    depth = node_info.depth,
+    parent = node_info.parent,
+    start = start,
+    end_ = end_,
+  }
+  local lines_diff = nodes_info[node].len - len
+  if lines_diff ~= 0 then
+    local parent = node_info.parent
+    while parent do
+      local parent_info = nodes_info[parent]
+      parent_info.len = parent_info.len + lines_diff
+      parent = nodes_info[parent].parent
+    end
+  end
 end
 
 ---@class dm.TreeViewParams

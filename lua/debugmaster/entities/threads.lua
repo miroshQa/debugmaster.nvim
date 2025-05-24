@@ -33,13 +33,16 @@ threads.thread_handler = tree.dispatcher.new {
     ["<CR>"] = function(event)
       local cur = event.cur
       cur.collapsed = not cur.collapsed
-      event.view:refresh()
+      event.view:refresh(cur)
     end
   }
 }
 
+local count = 0
 threads.frame_handler = tree.dispatcher.new {
   render = function(event)
+    print("threads updated: ", count)
+    count = count + 1
     local node = event.cur
     local icon = SessionManager.is_current_frame(node) and "  " or ""
     local path = (node.source or {}).path or "unknown"
@@ -50,7 +53,7 @@ threads.frame_handler = tree.dispatcher.new {
   keymaps = {
     ["<CR>"] = function(event)
       SessionManager.set_current_frame(event.cur)
-      event.view:refresh()
+      event.view:refresh(event.cur)
     end
   }
 }

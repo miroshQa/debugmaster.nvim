@@ -21,7 +21,7 @@ local function handerlify(root, h)
 end
 
 ---@type dm.TreeNodeEventHandler
-local handler = function(event)
+local generic_handler = function(event)
   if event.name == "render" then
     event.out.lines = { { { event.cur.value } } }
   end
@@ -64,7 +64,7 @@ T["it renders"]["tree"] = function()
       { value = "c" },
     }
   }
-  handerlify(root, handler)
+  handerlify(root, generic_handler)
   local view = tree.view.new { root = root, keymaps = {} }
   expect.equality(view.snapshot.nodes_info[view.root].len, 3)
   expect.equality(view.snapshot:get(0).value, "a")
@@ -95,7 +95,7 @@ T["it renders"]["partially"] = function()
       },
     },
   }
-  handerlify(root, handler)
+  handerlify(root, generic_handler)
   local view = tree.view.new { root = root, keymaps = {} }
   expect.equality(view.snapshot.nodes_info[view.root].len, 7)
   expect.equality(view.snapshot.nodes_info[root.children[1]].len, 3)
@@ -114,6 +114,30 @@ T["it renders"]["partially"] = function()
 end
 
 
+-- T["it renders"]["tree with concealed node"] = function()
+--   local root = {
+--     values = {
+--       { { "a1" } },
+--       { { "a2" } },
+--     },
+--     children = {
+--       { values = { { { "b" } } }, conceal = true },
+--       { values = { { { "c" } } } },
+--     }
+--   }
+--   handerlify(root, function(event)
+--     if event.name == "render" and not event.cur.conceal then
+--       event.out.lines = event.cur.values
+--     end
+--   end)
+--   local view = tree.view.new { root = root, keymaps = {} }
+--   expect_render(view, { "a1", "a2", "c" })
+--   local b = root.children[1]
+--   b.conceal = false
+--   view:refresh(b)
+--   expect_render(view, { "a1", "a2", "b", "c" })
+-- end
+--
 
 
 return T
