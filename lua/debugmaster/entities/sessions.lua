@@ -6,11 +6,14 @@ local sessions = {}
 
 
 ---@alias dm.SessionrootNode {handler: dm.TreeNodeEventHandler, children: dm.SessionNode[]}
----@alias dm.SessionNode {handler: dm.SessionNodeEventHandler, session: dap.Session}
+
+---@class dm.SessionNode: dap.Session
+---@field handler dm.SessionNodeEventHandler
+
 ---@alias dm.SessionTreeNode dm.SessionNode | dm.SessionrootNode
 
 sessions.root_handler = tree.dispatcher.new {
-  render = function(event)
+  render = function(_, event)
     event.out.lines = {
       { { "SESSIONS:", "WarningMsg" } },
     }
@@ -18,27 +21,22 @@ sessions.root_handler = tree.dispatcher.new {
   keymaps = {},
 }
 
----@alias dm.SessionNodeEventHandler fun(event: dm.SessionRenderEvent)
+---@alias dm.SessionNodeEventHandler dm.SessionNodeEventHandler
 ---@type dm.SessionNodeEventHandler
 sessions.session_handler = tree.dispatcher.new {
-  ---@class dm.SessionRenderEvent: dm.TreeNodeRenderEvent
-  ---@field cur dm.SessionNode
-  ---@param event dm.SessionRenderEvent
-  render = function(event)
+  ---@param node dm.SessionNode
+  render = function(node, event)
     local cur_session = dap.session()
-    local node = event.cur
     local icon = (cur_session or {}).id == node.id and "->" or ""
     event.out.lines = {
       { { string.format("%s %s. %s ", icon, node.id, node.config.name) } },
     }
   end,
-  ---@class dm.SessionKeymapEvent: dm.TreeNodeKeymapEvent
-  ---@field cur dm.SessionNode
-  ---@type table<string, fun(event: dm.SessionKeymapEvent)>
+  ---@type table<string, fun(node: dm.SessionNode, event: dm.TreeNodeKeymapEvent)>
   keymaps = {
-    ["<CR>"] = function(event)
-      dap.set_session(event.cur)
-      SessionsManager.set_active(event.cur)
+    ["<CR>"] = function(node, event)
+      dap.set_session(node)
+      SessionsManager.set_active(node)
       event.view:refresh()
     end
   }

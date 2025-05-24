@@ -6,15 +6,13 @@
 
 -- Adds new User events:
 -- 1. DmBpChanged
--- 2. DmSessionChanged
+-- 2. DmCurrentSessionChanged
 -- 3. DmCurrentFrameChanged
 -- 4. DmTermAttached, DmTermDetached
-
----NOTE: Do we want to fork nvim-dap and take only protocol handling
--- and configurations framework from there and extending session functionality with this?
---- People probably will gonna hate me for this XD
+-- 5. DmSessionsChanged
 
 local dap = require("dap")
+local breakpoints = require("dap.breakpoints")
 local api = vim.api
 
 local SesssionsManager = {}
@@ -29,11 +27,21 @@ local sessions = {}
 
 ---@class dm.Breakpoint
 ---@field buf number
+---@field condition string?
 ---@field line number
 ---@field hitCondition string
 ---@field logMessage string
 
 local last_config = nil
+
+local call_sessions_changed_event = function()
+  api.nvim_exec_autocmds("User", { pattern = "DmSessionsChanged" })
+end
+
+dap.listeners.after.launch["random123"] = call_sessions_changed_event
+dap.listeners.after.attach["random123"] = call_sessions_changed_event
+dap.listeners.after.terminate["random123"] = call_sessions_changed_event
+dap.listeners.after.disconnect["random123"] = call_sessions_changed_event
 
 dap.defaults.fallback.terminal_win_cmd = function()
   local term_buf = api.nvim_create_buf(false, false)
@@ -45,7 +53,8 @@ end
 dap.listeners.after.event_initialized["dm-saveconfig"] = function(session)
   local config = session.config
   last_config = config
-  sessions[session] = { config = config }
+  sessions[session] = sessions[session] or {}
+  sessions[session].config = config
 end
 
 function SesssionsManager.launch()
@@ -88,10 +97,10 @@ end
 function SesssionsManager.attach_term(buf)
   local s = dap.session()
   if not s then
-    print("Can't attach term. No active session")
+    print("Can't attach terminal. No active session")
     return false
   elseif SesssionsManager.get_terminal() then
-    print("Can't attach term. Already attached")
+    print("Can't attach terminal. Already attached")
     return false
   end
 
@@ -114,29 +123,65 @@ function SesssionsManager.get_terminal(s)
   return (sessions[s] or {}).terminal
 end
 
-function SesssionsManager.toggle_breakpoint(...)
-  dap.toggle_breakpoint(...)
+---@param condition string?
+---@param hit_condition string?
+---@param log_message string?
+---@param replace_old boolean?
+function SesssionsManager.toggle_breakpoint(condition, hit_condition, log_message, replace_old)
+  dap.toggle_breakpoint(condition, hit_condition, log_message, replace_old)
   api.nvim_exec_autocmds("User", { pattern = "DmBpChanged" })
+end
+
+function SesssionsManager.clear_breakpoints()
+  dap.clear_breakpoints()
+  api.nvim_exec_autocmds("User", { pattern = "DmBpChanged" })
+end
+
+function SesssionsManager.frame_down()
+  dap.down()
+  api.nvim_exec_autocmds("User", { pattern = "DmCurrentFrameChanged" })
+end
+
+function SesssionsManager.frame_up()
+  dap.up()
+  api.nvim_exec_autocmds("User", { pattern = "DmCurrentFrameChanged" })
 end
 
 ---@return dm.Breakpoint[]
 function SesssionsManager.list_breakpoints()
-  local bps = require("dap.breakpoints").get()
+  local bps = breakpoints.get()
   ---@type dm.Breakpoint[]
   local res = {}
   for buf, bp_list in pairs(bps) do
     for _, bp in ipairs(bp_list) do
       ---@type dm.Breakpoint
-      local b = { buf = buf, line = bp.line, hitCondition = bp.hitCondition, logMessage = bp.logMessage }
+      local b = { buf = buf, condition = bp.condition, line = bp.line, hitCondition = bp.hitCondition, logMessage = bp
+      .logMessage }
       table.insert(res, b)
     end
   end
   return res
 end
 
+---@param bps dm.Breakpoint[]
+function SesssionsManager.remove_breakpoints(bps)
+  for _, bp in ipairs(bps) do
+    breakpoints.remove(bp.buf, bp.line)
+    for _, session in pairs(dap.sessions()) do
+      session:set_breakpoints(breakpoints.get(bp.buf))
+    end
+  end
+  api.nvim_exec_autocmds("User", { pattern = "DmBpChanged" })
+end
+
+function SesssionsManager.set(opts, buf, line)
+  breakpoints.set(opts, buf, line)
+  api.nvim_exec_autocmds("User", { pattern = "DmBpChanged" })
+end
+
 function SesssionsManager.set_active(s)
-  api.nvim_exec_autocmds("User", { pattern = "DmSessionChanged" })
   dap.set_session(s)
+  api.nvim_exec_autocmds("User", { pattern = "DmCurrentSessionChanged" })
 end
 
 return SesssionsManager

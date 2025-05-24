@@ -7,14 +7,14 @@ local tree = {}
 
 ---@class dm.TreeNodeRenderEvent
 ---@field name "render"
----@field cur dm.TreeNode
+---@field node dm.TreeNode
 ---@field depth number
 ---@field parent dm.TreeNode
 ---@field out {lines: dm.HlLine[]?}
 
 ---@class dm.TreeNodeKeymapEvent
 ---@field name "keymap"
----@field cur dm.TreeNode
+---@field node dm.TreeNode
 ---@field key string
 ---@field view dm.TreeView
 ---@field out nil
@@ -63,9 +63,9 @@ function SnapshotMethods:get(line)
     overlap = true,
   })[1]
   assert(mark, "no mark!")
-  local cur = self.node_by_extmark_id[mark[1]]
-  assert(cur, "No node under cursor! This could only happen if buffer was modified since render!")
-  return cur
+  local node = self.node_by_extmark_id[mark[1]]
+  assert(node, "No node under cursor! This could only happen if buffer was modified since render!")
+  return node
 end
 
 ---@class dm.TreeRenderParams
@@ -96,18 +96,18 @@ function tree.render(params)
   local nodes_info = base.nodes_info or {} ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
   local marks = {} ---@type {node: dm.TreeNode, row: number, end_row: number}[]
 
-  local function render(cur, depth, parent)
+  local function render(node, depth, parent)
     ---@type dm.TreeNodeRenderEvent
-    local event = { name = "render", cur = cur, depth = depth, parent = parent, out = {} }
-    if cur.handler then
-      cur.handler(event)
+    local event = { name = "render", node = node, depth = depth, parent = parent, out = {} }
+    if node.handler then
+      node.handler(event)
     end
 
     local node_start = line_num
     local lines = event.out.lines or {}
-    nodes_info[cur] = { depth = depth, len = 0, extmark_id = 0, parent = parent }
+    nodes_info[node] = { depth = depth, len = 0, extmark_id = 0, parent = parent }
     if #lines ~= 0 then
-      table.insert(marks, { node = cur, row = line_num, end_row = line_num + #lines - 1 })
+      table.insert(marks, { node = node, row = line_num, end_row = line_num + #lines - 1 })
     end
     for _, line in ipairs(lines) do
       local line_text = ""
@@ -130,13 +130,13 @@ function tree.render(params)
       line_num = line_num + 1
     end
 
-    if cur.children and not cur.collapsed then
-      for _, child in ipairs(cur.children) do
-        render(child, depth + 1, cur)
+    if node.children and not node.collapsed then
+      for _, child in ipairs(node.children) do
+        render(child, depth + 1, node)
       end
     end
 
-    nodes_info[cur].len = line_num - node_start
+    nodes_info[node].len = line_num - node_start
   end
 
   render(params.root, params.depth or 0, params.parent)
@@ -179,26 +179,36 @@ local TreeViewMethods = {}
 ---@private
 TreeViewMethods.__index = TreeViewMethods
 
----@param node dm.TreeNode?
+---Partial rerenders node
+---@param node dm.TreeNode? self.root if nil
 function TreeViewMethods:refresh(node)
   node = node or self.root
-  local snapshot = self.snapshot
-  local nodes_info = snapshot.nodes_info
-  local buf = self.buf
-  local node_info = snapshot.nodes_info[node] ---@type dm.SnapshotNodeInfo
+  local nodes_info = self.snapshot.nodes_info
+
+  local node_info = nodes_info[node]
   local id = node_info.extmark_id
-  -- we can't refresh this node because there is no extmark for this node
-  -- we can eliminate this restriction by refreshing first non empty parrent or root as fallback in the future
-  assert(id ~= 0, "you can't refresh node that returned 0 lines!")
-  local start = api.nvim_buf_get_extmark_by_id(buf, snapshot.extmarks_ns, id, {})[1]
+  -- if node extmark_id == 0 means there is no extmark for this node (render returned empty lines array) len == 0
+  -- let's find first visible parent then
+  while node_info.parent and id == 0 do
+    node = node_info.parent
+    node_info = nodes_info[node]
+    id = node_info.extmark_id
+  end
+
+  --- means we didn't find visible parent or user requested to refresh root
+  if node == self.root then
+    self.snapshot = tree.render { root = node, buf = self.buf }
+    return
+  end
+
+  local start = api.nvim_buf_get_extmark_by_id(self.buf, self.snapshot.extmarks_ns, id, {})[1]
   local len = node_info.len
-  assert(len ~= 0, "len must be not equal 0")
   local end_ = start + len
-  api.nvim_buf_clear_namespace(buf, snapshot.extmarks_ns, start, end_)
+  api.nvim_buf_clear_namespace(self.buf, self.snapshot.extmarks_ns, start, end_)
   tree.render {
     root = node,
-    buf = buf,
-    base = snapshot,
+    buf = self.buf,
+    base = self.snapshot,
     depth = node_info.depth,
     parent = node_info.parent,
     start = start,
@@ -228,20 +238,17 @@ function tree.view.new(params)
   local self = setmetatable({
     buf = buf,
     root = params.root,
-    snapshot = tree.render({
-      buf = buf,
-      root = params.root,
-    }),
+    snapshot = tree.render({ buf = buf, root = params.root }),
   }, TreeViewMethods)
 
   for _, key in pairs(keymaps) do
     local mode = "n"
     api.nvim_buf_set_keymap(buf, mode, key, "", {
       callback = function()
-        local cur = self.snapshot:get()
+        local node = self.snapshot:get()
         ---@type dm.TreeNodeKeymapEvent
-        local event = { name = "keymap", cur = cur, key = key, view = self }
-        cur.handler(event)
+        local event = { name = "keymap", node = node, key = key, view = self }
+        node.handler(event)
       end
     })
   end
@@ -251,19 +258,19 @@ end
 tree.dispatcher = {}
 
 ---@class dm.TreeNodeEventDispatcherParams
----@field render fun(event: dm.TreeNodeRenderEvent)
----@field keymaps table<string, fun(event: dm.TreeNodeKeymapEvent)>
+---@field render fun(node: dm.TreeNode, event: dm.TreeNodeRenderEvent)
+---@field keymaps table<string, fun(node: dm.TreeNode, event: dm.TreeNodeKeymapEvent)>
 
 ---@param params dm.TreeNodeEventDispatcherParams
 ---@return dm.TreeNodeEventHandler
 function tree.dispatcher.new(params)
   return function(event)
     if event.name == "render" then
-      params.render(event)
+      params.render(event.node, event)
     elseif event.name == "keymap" then
       local handler = params.keymaps[event.key]
       if handler then
-        handler(event)
+        handler(event.node, event)
       end
     end
   end

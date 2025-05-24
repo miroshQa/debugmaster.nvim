@@ -1,28 +1,28 @@
 local api = vim.api
 local bps = require("dap.breakpoints")
+local dap = require("dap")
 local tree = require("debugmaster.lib.tree")
 local SessionsManager = require("debugmaster.managers.SessionsManager")
 local dispatcher = tree.dispatcher
 local breakpoints = {}
 
----@alias dm.Bp {kind: "bp", line: number, condition?: string, buf: number}
----@alias dm.BprootRoot {kind: "root"}
----@alias dm.BpTreeNode dm.BprootRoot | dm.Bp
-
+---@alias dm.Bp {handler: dm.TreeNodeEventHandler, line: number, condition?: string, buf: number}
+---@alias dm.BpRootNode {handler: dm.TreeNodeEventHandler}
+---@alias dm.BpTreeNode dm.BpRootNode | dm.Bp
 
 breakpoints.root_handler = dispatcher.new {
-  render = function(event)
+  render = function(_, event)
     event.out.lines = {
       { { "BREAKPOINTS:", "WarningMsg" } },
-      { { "t - remove breakpoint", "Comment" }, { "c - change breakpoint condition", "Comment" } },
+      { { "1. t - remove breakpoint ", "Comment" }, { "2. c - change breakpoint condition", "Comment" } },
     }
   end,
   keymaps = {}
 }
 
 breakpoints.bp_handler = dispatcher.new {
-  render = function(event)
-    local node = event.cur
+  ---@param node dm.Bp
+  render = function(node, event)
     local indent = "    "
     local linenr = node.line
     local line = vim.trim(api.nvim_buf_get_lines(node.buf, linenr - 1, linenr, false)[1])
@@ -36,16 +36,22 @@ breakpoints.bp_handler = dispatcher.new {
     end
     event.out.lines = lines
   end,
+  ---@type table<string, fun(node: dm.Bp, event: dm.TreeNodeKeymapEvent)>
   keymaps = {
-    c = function(event)
-      local cur = event.cur
-      local condition = vim.fn.input({ default = cur.condition or "" })
-      bps.set({ condition = condition }, cur.buf, cur.line)
+    c = function(node, _)
+      local condition = vim.fn.input { prompt = "New condition: ", default = node.condition or "" }
+      SessionsManager.set({ condition = condition }, node.buf, node.line)
     end,
-    t = function(event)
-      breakpoints.remove_bp(event.cur)
+    t = function(node, _)
+      SessionsManager.remove_breakpoints({ node })
     end,
-    ["<CR>"] = function(event)
+    ["<CR>"] = function(node, event)
+      local win = vim.fn.win_getid(vim.fn.winnr('#'))
+      if win == 0 then
+        win = api.nvim_open_win(node.buf, true, { split = "left", win = -1 })
+      end
+      api.nvim_win_set_buf(win, node.buf)
+      api.nvim_win_set_cursor(win, { node.line, 0 })
     end
   }
 }
@@ -54,24 +60,11 @@ breakpoints.bp_handler = dispatcher.new {
 ---@return dm.Breakpoint[]
 function breakpoints.build_bps(bp_list)
   local children = {}
-  for _, bp in pairs(bp_list) do
-    ---@type dm.Bp[]
+  for _, bp in pairs(bp_list --[=[@as dm.Bp[]]=]) do
     bp.handler = breakpoints.bp_handler
-    bp.kind = "bp"
     table.insert(children, bp)
   end
   return children
-end
-
----@param node dm.BpTreeNode
-function breakpoints.remove_bp(node)
-  local dap = require("dap")
-  if node.kind == "bp" then
-    bps.remove(node.buf, node.line)
-    for _, session in pairs(dap.sessions()) do
-      session:set_breakpoints(bps.get(node.buf))
-    end
-  end
 end
 
 return breakpoints

@@ -71,4 +71,12 @@ function utils.get_string_hl(str, lang)
   return result
 end
 
+function utils.clamp(n, low, high)
+  return math.min(math.max(n, low), high)
+end
+
+function utils.get_file_icon()
+end
+
+
 return utils

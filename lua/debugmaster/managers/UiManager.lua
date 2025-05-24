@@ -5,7 +5,7 @@ local tree = require("debugmaster.lib.tree")
 local SessionsManager = require("debugmaster.managers.SessionsManager")
 local api = vim.api
 
----@class d.UiManagerComp
+---@class dm.UiManagerComp
 ---@field name string
 ---@field buf number
 
@@ -19,26 +19,25 @@ UiManager.terminal = (function()
   }
 
   local lines = {
-    "Debug adapter didn't provide term",
+    "Debug adapter didn't provide terminal",
     "1. Either no session is active",
     "2. Eiter you attached to the process",
-    "And then you can move the neovim term with the program",
+    "And then you can move the neovim terminal with the program",
     "to this section using 'dm' keymap in the debug mode",
     "3. Either you need to tweak your adapter configugration options",
     "And probably, the program output is being redirected to the REPL right now.",
     "- Consult with your debug adapter documentation",
     "https://github.com/mfussenegger/nvim-dap/wiki/Debug-Adapter-installation",
-    'Usually required option is `console = "integratedterm"`',
+    'Usually required option is `console = "integratedTerminal"`',
     "- Check nvim dap issues about your debug adapter",
   }
   api.nvim_buf_set_lines(comp.buf, 0, -1, false, lines)
   api.nvim_set_option_value("modifiable", false, { buf = comp.buf })
 
   api.nvim_create_autocmd("User", {
-    pattern = "DmSessionChanged",
+    pattern = "DmCurrentSessionChanged",
     callback = vim.schedule_wrap(function()
-      local session = assert(dap.session())
-      local new_buf = SessionsManager.get_terminal(session) or default_buf
+      local new_buf = SessionsManager.get_terminal() or default_buf
       comp.buf = new_buf
       api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
     end),
@@ -105,21 +104,23 @@ end)()
 UiManager.sessions = (function()
   local sessions = require("debugmaster.entities.sessions")
   local root = { children = {}, handler = sessions.root_handler }
+  local view = tree.view.new { root = root, keymaps = { "<CR>" } }
 
-  local function refresher()
-    root.children = {}
-    for _, s in pairs(dap.sessions()) do
-      s.handler = sessions.session_handler
-      table.insert(root.children, s)
+  vim.api.nvim_create_autocmd("User", {
+    pattern = { "DmSessionsChanged", "DmCurrentSessionChanged" },
+    callback = function(args)
+      root.children = {}
+      for _, s in pairs(dap.sessions() --[=[@as dm.SessionNode[]]=]) do
+        s.handler = sessions.session_handler
+        table.insert(root.children, s)
+      end
+      UiManager.dashboard.view:refresh(root)
     end
-    UiManager.dashboard.view:refresh(root)
-  end
-
-  dap.listeners.after.launch["random123"] = refresher
-  dap.listeners.after.attach["random123"] = refresher
+  })
 
   return {
     root = root,
+    view = view,
   }
 end)()
 
@@ -133,6 +134,7 @@ UiManager.breakpoints = (function()
     children = breakpoints.build_bps(SessionsManager.list_breakpoints()),
     handler = breakpoints.root_handler
   }
+  local view = tree.view.new { root = root, keymaps = { "<CR>", "t" } }
 
   api.nvim_create_autocmd("User", {
     pattern = "DmBpChanged",
@@ -144,6 +146,7 @@ UiManager.breakpoints = (function()
 
   return {
     root = root,
+    view = view,
     name = "[B]points",
   }
 end)()
@@ -151,10 +154,24 @@ end)()
 
 UiManager.help = (function()
   local help = require("debugmaster.entities.help")
-  return {
-    name = "[H]elp",
-    buf = help.construct(require("debugmaster.managers.DmManager").get_groups())
-  }
+  ---@type dm.HelpNodeRoot
+  local root = { handler = help.help_handler, groups = {} }
+  local comp = { name = "[H]elp" }
+  local view
+  -- to fix loop require
+  -- https://ericjmritz.wordpress.com/2014/02/06/lua-avoiding-stack-overflows-with-metamethods/
+  return setmetatable(comp, {
+    __index = function(t, k)
+      print("key == ", k)
+      if k == "buf" then
+        if not view then
+          root.groups = require("debugmaster.managers.DmManager").get_groups()
+          view = tree.view.new { root = root, keymaps = {} }
+        end
+        return view.buf
+      end
+    end
+  })
 end)()
 
 
@@ -162,15 +179,8 @@ UiManager.threads = (function()
   local threads = require("debugmaster.entities.threads")
   ---@type dm.TreeNode
   local root = {
-    kind = "root",
     children = {},
-    handler = function(event)
-      if event.name == "render" then
-        event.out.lines = {
-          { { "THREADS", "WarningMsg" } }
-        }
-      end
-    end
+    handler = threads.root_handler,
   }
 
   local view = tree.view.new {
@@ -185,11 +195,9 @@ UiManager.threads = (function()
     end
     root.children = {}
     for _, thread in pairs(s.threads --[=[@as dm.ThreadsNode[]]=]) do
-      thread.kind = "thread"
       thread.handler = threads.thread_handler
       thread.children = {}
-      for _, frame in ipairs(thread.frames --[=[@as dm.FrameNode[]]=]) do
-        frame.kind = "frame"
+      for _, frame in ipairs(thread.frames or {} --[=[@as dm.FrameNode[]]=]) do
         frame.handler = threads.frame_handler
         table.insert(thread.children, frame)
       end
@@ -232,6 +240,18 @@ UiManager.repl = (function()
   }
 end)()
 
+do
+  -- local watches = require("")
+  local root_handler = tree.dispatcher.new {
+    render = function(node, event)
+      event.out.lines = { { { "WATCHES", "WarningMsg" } } }
+    end,
+    keymaps = { "" }
+  }
+  ---@type dm.TreeNode
+  local root = { handler = root_handler }
+  UiManager.watches = { root = root }
+end
 
 UiManager.dashboard = (function()
   local separator = {
@@ -251,6 +271,8 @@ UiManager.dashboard = (function()
   local root = {
     children = {
       UiManager.scopes.root,
+      separator,
+      UiManager.watches.root,
       separator,
       UiManager.threads.root,
       separator,

@@ -23,7 +23,7 @@ end
 ---@type dm.TreeNodeEventHandler
 local generic_handler = function(event)
   if event.name == "render" then
-    event.out.lines = { { { event.cur.value } } }
+    event.out.lines = { { { event.node.value } } }
   end
 end
 
@@ -74,8 +74,6 @@ end
 
 
 T["it renders"]["partially"] = function()
-  -- not relevant anymore because I removed partial renredering
-  -- but let's keep it if I decide to try again
   local root = {
     value = "a",
     children = {
@@ -114,30 +112,30 @@ T["it renders"]["partially"] = function()
 end
 
 
--- T["it renders"]["tree with concealed node"] = function()
---   local root = {
---     values = {
---       { { "a1" } },
---       { { "a2" } },
---     },
---     children = {
---       { values = { { { "b" } } }, conceal = true },
---       { values = { { { "c" } } } },
---     }
---   }
---   handerlify(root, function(event)
---     if event.name == "render" and not event.cur.conceal then
---       event.out.lines = event.cur.values
---     end
---   end)
---   local view = tree.view.new { root = root, keymaps = {} }
---   expect_render(view, { "a1", "a2", "c" })
---   local b = root.children[1]
---   b.conceal = false
---   view:refresh(b)
---   expect_render(view, { "a1", "a2", "b", "c" })
--- end
---
+T["it renders"]["tree with concealed node"] = function()
+  local root = {
+    values = {
+      { { "a1" } },
+      { { "a2" } },
+    },
+    children = {
+      { values = { { { "b" } } }, conceal = true },
+      { values = { { { "c" } } } },
+    }
+  }
+  handerlify(root, function(event)
+    if event.name == "render" and not event.node.conceal then
+      event.out.lines = event.node.values
+    end
+  end)
+  local view = tree.view.new { root = root, keymaps = {} }
+  expect_render(view, { "a1", "a2", "c" })
+  local b = root.children[1]
+  b.conceal = false
+  view:refresh(b)
+  expect_render(view, { "a1", "a2", "b", "c" })
+end
+
 
 
 return T

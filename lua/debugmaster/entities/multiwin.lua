@@ -139,15 +139,11 @@ function MultiWin:rotate(step)
   end
 end
 
-function math.clamp(n, low, high)
-  return math.min(math.max(n, low), high)
-end
-
 function MultiWin:resize(step)
   if self.float or not self:is_open() then
     return
   end
-  self.size = math.clamp(self.size + step, 10, 90)
+  self.size = utils.clamp(self.size + step, 10, 90)
   self:close()
   self:open()
 end
