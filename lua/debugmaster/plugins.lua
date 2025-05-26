@@ -18,7 +18,7 @@ plugins.cursor_hl = (function()
       end
 
       local cursor_mode_off = vim.o.guicursor
-      local cursor_mode_on = "a:dCursor"
+      local cursor_mode_on = cursor_mode_off .. ",a:dCursor"
 
       api.nvim_create_autocmd("User", {
         pattern = "DebugModeChanged",
