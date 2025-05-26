@@ -124,7 +124,7 @@ function Breakpoints.new()
         vim.cmd("normal " .. bp.line .. "G")
       end
     end
-  end)
+  end, { buffer = self.buf })
 
   dap.listeners.after.setBreakpoints["debugmaster"] = function()
     self._tree:render()
