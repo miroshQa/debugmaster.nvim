@@ -42,4 +42,13 @@ sessions.session_handler = tree.dispatcher.new {
   }
 }
 
+function sessions.construct()
+  local children = {}
+  for _, s in pairs(dap.sessions() --[=[@as dm.SessionNode[]]=]) do
+    s.handler = sessions.session_handler
+    table.insert(children, s)
+  end
+  return children
+end
+
 return sessions

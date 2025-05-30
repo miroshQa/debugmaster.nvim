@@ -1,5 +1,6 @@
 local dap = require("dap")
 local api = vim.api
+local uv = vim.uv
 local tree = require("debugmaster.lib.tree")
 local view = require("debugmaster.lib.view")
 local async = require("debugmaster.lib.async")
@@ -50,7 +51,11 @@ scopes.root_handler = dispatcher.new {
   render = function(node, event)
     event.out.lines = {
       { { "SCOPES:", "WarningMsg" }, },
-      { { "Expand node - <CR>", "Comment" } }
+      {
+        { "1. Expand node - <CR> ",     "Comment" },
+        { "2. Expand recursively - r ", "Comment" },
+        { '3. Send to watches - a',     "Comment" },
+      }
     }
   end,
   keymaps = {}
@@ -70,6 +75,10 @@ scopes.scope_handler = dispatcher.new {
   }
 }
 
+---@param node dm.VariablesNode
+scopes.variable_render = function(node, event)
+end
+
 scopes.var_handler = dispatcher.new {
   ---@param node dm.VariablesNode
   render = function(node, event)
@@ -88,6 +97,7 @@ scopes.var_handler = dispatcher.new {
       end
     end
   end,
+  ---@type table<string, fun(node: dm.VariablesNode, event: dm.TreeNodeEvent)>
   keymaps = {
     ["<CR>"] = scopes.toggle_variables,
     K = function(node, event)
@@ -95,9 +105,71 @@ scopes.var_handler = dispatcher.new {
       api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(vim.inspect(node), "\n"))
       vim.treesitter.start(buf, "lua")
       view.popup.new { buf = buf }
+    end,
+    r = function(node, event)
+      print("launch recurvie expand")
+      scopes.expand_recursive(node, function()
+        event.view:refresh(node)
+        print("recursive expand finished")
+      end, 500)
+    end,
+    d = function(node, event)
+      local UiManager = require("debugmaster.managers.UiManager")
+      UiManager.watches.remove(node)
+      event.view:refresh(UiManager.watches.root)
+    end,
+    a = function(node, event)
+      if node.evaluateName then
+        local UiManager = require("debugmaster.managers.UiManager")
+        UiManager.watches.add(node.evaluateName, function()
+          event.view:refresh(UiManager.watches.root)
+        end)
+      else
+        print("no evaluateName!")
+      end
     end
   }
 }
+
+---@param node dm.VariablesNode
+---@param cb fun()
+---@param timeout integer
+function scopes.expand_recursive(node, cb, timeout)
+  local timer = assert(uv.new_timer())
+  local should_stop = false
+  timer:start(timeout, 0, function()
+    should_stop = true
+    timer:close()
+    -- print("STOP STOP!!!")
+  end)
+
+  local function expand_recursive_internal(n, current_depth, done_cb)
+    if n.variablesReference < 1 or should_stop then
+      return done_cb()
+    end
+
+    local function expand_children()
+      local tasks = {}
+      for _, child in ipairs(n.children) do
+        table.insert(tasks, function(on_done)
+          expand_recursive_internal(child, current_depth + 1, on_done)
+        end)
+      end
+      print("amount of tasks: ", #tasks, "depth: ", current_depth)
+      async.await_all(tasks, done_cb)
+    end
+
+    local s = assert(dap.session())
+    if not n.children then
+      scopes.load_variables(s, n, expand_children)
+    else
+      expand_children()
+    end
+    n.collapsed = false
+  end
+
+  expand_recursive_internal(node, 0, cb)
+end
 
 ---Load varialles. Erase all previous children. Cb called on done.
 ---@param s dap.Session
@@ -107,6 +179,7 @@ function scopes.load_variables(s, target, cb)
   assert(target.variablesReference ~= 0, "variables refernece == 0. can't load variables!!")
   local req = { variablesReference = target.variablesReference }
   s:request("variables", req, function(err, result)
+    assert(not err)
     target.children = {}
     target.child_by_name = {}
     -- NOTE: should consider deep copy?
@@ -131,6 +204,7 @@ function scopes.fetch_frame(s, frame, cb)
   ---@param err any
   ---@param result dap.ScopesResponse
   s:request("scopes", { frameId = frame.id }, function(err, result)
+    assert(not err)
     ---@type dm.ScopesNode[]
     local scp = result.scopes
     local tasks = {}
@@ -183,6 +257,7 @@ end
 ---@field name string
 ---@field value string
 ---@field variablesReference number?
+---@field evaluateName string
 
 ---@param req dap.EvaluateArguments
 ---@param cb fun(res: dm.EvaluateResult)
@@ -191,11 +266,13 @@ function scopes.eval(req, cb, base)
   local s = assert(dap.session())
   local res = base or {}
   req.frameId = s.current_frame.id
+  req.context = "repl"
   s:request("evaluate", req, function(err, result)
     result = result or {}
     res.name = req.expression
     res.value = result.result or (err.message or "unknown evaluation error")
     res.variablesReference = result.variablesReference
+    res.evaluateName = res.name
     res.handler = scopes.var_handler
     cb(res)
   end)

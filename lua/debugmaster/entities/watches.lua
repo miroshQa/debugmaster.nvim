@@ -1,13 +1,12 @@
-local dap = require("dap")
-local scopes = require("debugmaster.entities.scopes")
+local tree = require("debugmaster.lib.tree")
 
 local watches = {}
 
-function watches.fetch_expression()
-  local expression = { handler = scopes.var_handler }
-  local s = assert(dap.session())
-  s:request("evaluate", nil, function(err, result)
-  end)
-end
+
+watches.handler = tree.dispatcher.new {
+  render = function(node, event)
+  end,
+  keymaps = { "<CR>" },
+}
 
 return watches

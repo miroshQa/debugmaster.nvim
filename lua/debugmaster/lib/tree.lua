@@ -244,6 +244,7 @@ function tree.view.new(params)
   for _, key in pairs(keymaps) do
     local mode = "n"
     api.nvim_buf_set_keymap(buf, mode, key, "", {
+      nowait = true,
       callback = function()
         local node = self.snapshot:get()
         ---@type dm.TreeNodeKeymapEvent

@@ -158,11 +158,22 @@ local misc_group = {
       desc = "Execute last yanked or deleted text in the repl",
     },
     {
+      key = "X",
+      action = function()
+        local text = vim.trim(vim.fn.getreg('"'))
+        UiManager.watches.add(text, function()
+          UiManager.dashboard.view:refresh(UiManager.watches.root)
+          UiManager.sidepanel:set_active_with_open(UiManager.dashboard)
+        end)
+      end,
+      desc = "Send last yanked or deleted text to the watches",
+    },
+    {
       key = "dm",
       action = function()
         local terminal = UiManager.terminal
         local buf = api.nvim_get_current_buf()
-        local is_term = api.nvim_get_option_value('buftype', { buf = buf }) == 'terminal'
+        local is_term = api.nvim_get_option_value("buftype", { buf = buf }) == "terminal"
         if not is_term then
           return print("Current buffer isn't terminal. Can't move to the Terminal section")
         end
@@ -202,6 +213,7 @@ for _, group in ipairs(groups) do
         opts = {
           callback = mapping.action,
           desc = mapping.desc,
+          nowait = true, --eliminates delay when overriding "c", "d", etc
         }
       }
       table.insert(mappings, new)

@@ -18,7 +18,8 @@ local threads = {}
 threads.root_handler = tree.dispatcher.new {
   render = function(node, event)
     event.out.lines = {
-      { { "THREADS", "WarningMsg" } }
+      { { "THREADS", "WarningMsg" } },
+      { { "Hint: navigate frames using [s and ]s", "Comment" } }
     }
   end,
   keymaps = {},
@@ -60,5 +61,23 @@ threads.frame_handler = tree.dispatcher.new {
     end
   }
 }
+
+function threads.construct()
+  local s = dap.session()
+  if not s then
+    return
+  end
+  local children = {}
+  for _, thread in pairs(s.threads --[=[@as dm.ThreadsNode[]]=]) do
+    thread.handler = threads.thread_handler
+    thread.children = {}
+    for _, frame in ipairs(thread.frames or {} --[=[@as dm.FrameNode[]]=]) do
+      frame.handler = threads.frame_handler
+      table.insert(thread.children, frame)
+    end
+    table.insert(children, thread)
+  end
+  return children
+end
 
 return threads

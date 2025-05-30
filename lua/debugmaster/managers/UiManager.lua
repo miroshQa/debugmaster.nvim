@@ -1,7 +1,6 @@
 -- UiController and access for each its element provider
 local dap = require("dap")
 local scopes = require("debugmaster.entities.scopes")
-local after = dap.listeners.after
 local tree = require("debugmaster.lib.tree")
 local SessionsManager = require("debugmaster.managers.SessionsManager")
 local api = vim.api
@@ -36,18 +35,9 @@ UiManager.terminal = (function()
   api.nvim_set_option_value("modifiable", false, { buf = comp.buf })
 
   api.nvim_create_autocmd("User", {
-    pattern = "DmCurrentSessionChanged",
-    callback = vim.schedule_wrap(function()
-      local new_buf = SessionsManager.get_terminal() or default_buf
-      comp.buf = new_buf
-      api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
-    end),
-  })
-
-  api.nvim_create_autocmd("User", {
-    pattern = "DmAttachedTermChanged",
-    callback = function(args)
-      comp.buf = args.data.buf or default_buf
+    pattern = "DmCurTermChanged",
+    callback = function()
+      comp.buf = SessionsManager.get_terminal() or default_buf
       api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
     end
   })
@@ -59,7 +49,7 @@ UiManager.scopes = (function()
   local root = { kind = "root", children = nil, handler = scopes.root_handler }
 
   api.nvim_create_autocmd("User", {
-    pattern = "DmCurrentFrameChanged",
+    pattern = "DmCurFrameChanged",
     callback = function()
       local s = dap.session()
       if not s or not s.current_frame then
@@ -94,12 +84,8 @@ UiManager.sessions = (function()
 
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DmSessionsChanged", "DmCurrentSessionChanged" },
-    callback = function(args)
-      root.children = {}
-      for _, s in pairs(dap.sessions() --[=[@as dm.SessionNode[]]=]) do
-        s.handler = sessions.session_handler
-        table.insert(root.children, s)
-      end
+    callback = function()
+      root.children = sessions.construct()
       UiManager.dashboard.view:refresh(root)
     end
   })
@@ -174,30 +160,14 @@ UiManager.threads = (function()
     keymaps = { "<CR>" }
   }
 
-  local update_tree = function()
-    local s = dap.session()
-    if not s then
-      return
-    end
-    root.children = {}
-    for _, thread in pairs(s.threads --[=[@as dm.ThreadsNode[]]=]) do
-      thread.handler = threads.thread_handler
-      thread.children = {}
-      for _, frame in ipairs(thread.frames or {} --[=[@as dm.FrameNode[]]=]) do
-        frame.handler = threads.frame_handler
-        table.insert(thread.children, frame)
-      end
-      table.insert(root.children, thread)
-    end
-    UiManager.dashboard.view:refresh(root)
-  end
-
   api.nvim_create_autocmd("User", {
-    pattern = "DmCurrentFrameChanged",
-    callback = update_tree,
+    pattern = "DmCurFrameChanged",
+    callback = function()
+      root.children = threads.construct()
+      UiManager.dashboard.view:refresh(root)
+    end
   })
 
-  dap.listeners.after.stackTrace["threads_widget"] = update_tree
   return {
     view = view,
     name = "[T]hreads",
@@ -208,7 +178,7 @@ end)()
 UiManager.sidepanel = require("debugmaster.entities.multiwin").new()
 
 UiManager.repl = (function()
-  local dap_repl = require 'dap.repl'
+  local dap_repl = require("dap.repl")
   local repl_buf, repl_win = dap_repl.open(nil, "vertical split")
   api.nvim_win_close(repl_win, true)
   vim.keymap.set("i", "<C-w>", "<C-S-w>", { buffer = repl_buf })
@@ -227,16 +197,43 @@ UiManager.repl = (function()
 end)()
 
 do
-  -- local watches = require("")
   local root_handler = tree.dispatcher.new {
     render = function(node, event)
-      event.out.lines = { { { "WATCHES", "WarningMsg" } } }
+      event.out.lines = {
+        { { "WATCHES", "WarningMsg" } },
+        { { "1. Remove an entry - d ", "Comment" }, { "2. X -  in debug mode to add last deleted text here", "Comment" } },
+      }
     end,
     keymaps = { "" }
   }
   ---@type dm.TreeNode
   local root = { handler = root_handler, children = {} }
-  UiManager.watches = { root = root }
+  UiManager.watches = {
+    root = root,
+    remove = function(target)
+      for i, node in ipairs(root.children) do
+        if node == target then
+          table.remove(root.children, i)
+        end
+      end
+    end,
+    add = function(expr, cb)
+      for i, node in ipairs(root.children) do
+        if node.evaluateName == expr then
+          table.remove(root.children, i)
+          cb()
+          return
+        end
+      end
+      scopes.eval({ expression = expr }, function(res)
+        if not res then
+          return
+        end
+        table.insert(root.children, res)
+        cb()
+      end)
+    end
+  }
 end
 
 UiManager.dashboard = (function()
@@ -270,11 +267,11 @@ UiManager.dashboard = (function()
 
   local view = tree.view.new {
     root = root,
-    keymaps = { "<CR>", "t", "c", "K" },
+    keymaps = { "<CR>", "t", "c", "K", "r", "d", "a" },
   }
 
   api.nvim_create_autocmd("User", {
-    pattern = "DmCurrentFrameChanged",
+    pattern = "DmCurFrameChanged",
     callback = function()
       for _, node in ipairs(UiManager.watches.root.children) do
         scopes.eval({ expression = node.name }, function(res)
@@ -282,20 +279,6 @@ UiManager.dashboard = (function()
         end, node)
       end
     end,
-  })
-
-  api.nvim_buf_set_keymap(view.buf, "n", "a", "", {
-    callback = function()
-      vim.ui.input({ prompt = "Enter an expression: " }, function(res)
-        scopes.eval({ expression = res }, function(res)
-          if not res then
-            return
-          end
-          table.insert(UiManager.watches.root.children, res)
-          view:refresh(UiManager.watches.root)
-        end)
-      end)
-    end
   })
 
   return {

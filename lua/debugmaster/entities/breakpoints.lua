@@ -39,8 +39,9 @@ breakpoints.bp_handler = dispatcher.new {
   ---@type table<string, fun(node: dm.Bp, event: dm.TreeNodeKeymapEvent)>
   keymaps = {
     c = function(node, _)
-      local condition = vim.fn.input { prompt = "New condition: ", default = node.condition or "" }
-      SessionsManager.set({ condition = condition }, node.buf, node.line)
+      vim.ui.input({ prompt = "New condition: ", default = node.condition or "" }, function(condition)
+        SessionsManager.set({ condition = condition }, node.buf, node.line)
+      end)
     end,
     t = function(node, _)
       SessionsManager.remove_breakpoints({ node })

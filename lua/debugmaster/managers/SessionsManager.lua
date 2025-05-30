@@ -7,9 +7,9 @@
 -- Adds new User events:
 -- 1. DmBpChanged
 -- 2. DmCurrentSessionChanged
--- 3. DmCurrentFrameChanged
--- 4. DmAttachedTermChanged
+-- 3. DmCurFrameChanged
 -- 5. DmSessionsChanged
+-- 6. DmCurTermChanged
 
 local dap = require("dap")
 local breakpoints = require("dap.breakpoints")
@@ -46,7 +46,7 @@ dap.listeners.after.terminate[id] = call_sessions_changed_event
 dap.listeners.after.disconnect[id] = call_sessions_changed_event
 
 after.stackTrace[id] = function()
-  api.nvim_exec_autocmds("User", { pattern = "DmCurrentFrameChanged" })
+  api.nvim_exec_autocmds("User", { pattern = "DmCurFrameChanged" })
 end
 
 dap.defaults.fallback.terminal_win_cmd = function()
@@ -70,7 +70,7 @@ end
 function SesssionsManager.set_current_frame(new)
   local s = assert(dap.session())
   s:_frame_set(new)
-  api.nvim_exec_autocmds("User", { pattern = "DmCurrentFrameChanged" })
+  api.nvim_exec_autocmds("User", { pattern = "DmCurFrameChanged" })
 end
 
 ---comment
@@ -111,12 +111,12 @@ function SesssionsManager.attach_term(buf)
   end
 
   SesssionsManager.register_term(s, buf)
-  api.nvim_exec_autocmds("User", { pattern = "DmAttachedTermChanged", data = { buf = buf } })
+  api.nvim_exec_autocmds("User", { pattern = "DmCurTermChanged" })
 
   api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
     callback = function(args)
       if args.buf == buf then
-        api.nvim_exec_autocmds("User", { pattern = "DmAttachedTermChanged", data = {} })
+        api.nvim_exec_autocmds("User", { pattern = "DmCurTermChanged" })
       end
     end
   })
@@ -145,12 +145,12 @@ end
 
 function SesssionsManager.frame_down()
   dap.down()
-  api.nvim_exec_autocmds("User", { pattern = "DmCurrentFrameChanged" })
+  api.nvim_exec_autocmds("User", { pattern = "DmCurFrameChanged" })
 end
 
 function SesssionsManager.frame_up()
   dap.up()
-  api.nvim_exec_autocmds("User", { pattern = "DmCurrentFrameChanged" })
+  api.nvim_exec_autocmds("User", { pattern = "DmCurFrameChanged" })
 end
 
 ---@return dm.Breakpoint[]
@@ -194,6 +194,7 @@ end
 function SesssionsManager.set_active(s)
   dap.set_session(s)
   api.nvim_exec_autocmds("User", { pattern = "DmCurrentSessionChanged" })
+  api.nvim_exec_autocmds("User", { pattern = "DmCurTermChanged" })
 end
 
 return SesssionsManager
