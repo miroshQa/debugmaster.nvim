@@ -8,12 +8,14 @@
 -- 1. DmBpChanged
 -- 2. DmCurrentSessionChanged
 -- 3. DmCurrentFrameChanged
--- 4. DmTermAttached, DmTermDetached
+-- 4. DmAttachedTermChanged
 -- 5. DmSessionsChanged
 
 local dap = require("dap")
 local breakpoints = require("dap.breakpoints")
+local after = dap.listeners.after
 local api = vim.api
+local id = "SesssionsManager"
 
 local SesssionsManager = {}
 
@@ -38,10 +40,14 @@ local call_sessions_changed_event = function()
   api.nvim_exec_autocmds("User", { pattern = "DmSessionsChanged" })
 end
 
-dap.listeners.after.launch["random123"] = call_sessions_changed_event
-dap.listeners.after.attach["random123"] = call_sessions_changed_event
-dap.listeners.after.terminate["random123"] = call_sessions_changed_event
-dap.listeners.after.disconnect["random123"] = call_sessions_changed_event
+dap.listeners.after.launch[id] = call_sessions_changed_event
+dap.listeners.after.attach[id] = call_sessions_changed_event
+dap.listeners.after.terminate[id] = call_sessions_changed_event
+dap.listeners.after.disconnect[id] = call_sessions_changed_event
+
+after.stackTrace[id] = function()
+  api.nvim_exec_autocmds("User", { pattern = "DmCurrentFrameChanged" })
+end
 
 dap.defaults.fallback.terminal_win_cmd = function()
   local term_buf = api.nvim_create_buf(false, false)
@@ -50,7 +56,7 @@ dap.defaults.fallback.terminal_win_cmd = function()
 end
 
 
-dap.listeners.after.event_initialized["dm-saveconfig"] = function(session)
+dap.listeners.after.event_initialized[id] = function(session)
   local config = session.config
   last_config = config
   sessions[session] = sessions[session] or {}
@@ -105,12 +111,12 @@ function SesssionsManager.attach_term(buf)
   end
 
   SesssionsManager.register_term(s, buf)
-  api.nvim_exec_autocmds("User", { pattern = "DmTermAttached", data = { buf = buf } })
+  api.nvim_exec_autocmds("User", { pattern = "DmAttachedTermChanged", data = { buf = buf } })
 
   api.nvim_create_autocmd({ "BufDelete", "BufUnload" }, {
     callback = function(args)
       if args.buf == buf then
-        api.nvim_exec_autocmds("User", { pattern = "DmTermDetached" })
+        api.nvim_exec_autocmds("User", { pattern = "DmAttachedTermChanged", data = {} })
       end
     end
   })
@@ -155,8 +161,14 @@ function SesssionsManager.list_breakpoints()
   for buf, bp_list in pairs(bps) do
     for _, bp in ipairs(bp_list) do
       ---@type dm.Breakpoint
-      local b = { buf = buf, condition = bp.condition, line = bp.line, hitCondition = bp.hitCondition, logMessage = bp
-      .logMessage }
+      local b = {
+        buf = buf,
+        condition = bp.condition,
+        line = bp.line,
+        hitCondition = bp.hitCondition,
+        logMessage = bp
+            .logMessage
+      }
       table.insert(res, b)
     end
   end

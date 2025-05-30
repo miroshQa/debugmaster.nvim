@@ -1,5 +1,6 @@
 -- UiController and access for each its element provider
 local dap = require("dap")
+local scopes = require("debugmaster.entities.scopes")
 local after = dap.listeners.after
 local tree = require("debugmaster.lib.tree")
 local SessionsManager = require("debugmaster.managers.SessionsManager")
@@ -44,18 +45,9 @@ UiManager.terminal = (function()
   })
 
   api.nvim_create_autocmd("User", {
-    pattern = "DmTermAttached",
+    pattern = "DmAttachedTermChanged",
     callback = function(args)
-      comp.buf = args.data.buf
-      api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
-    end
-  })
-
-
-  api.nvim_create_autocmd("User", {
-    pattern = "DmTermDetached",
-    callback = function()
-      comp.buf = default_buf
+      comp.buf = args.data.buf or default_buf
       api.nvim_exec_autocmds("User", { pattern = "WidgetBufferNumberChanged" })
     end
   })
@@ -64,34 +56,28 @@ UiManager.terminal = (function()
 end)()
 
 UiManager.scopes = (function()
-  local scopes = require("debugmaster.entities.scopes")
-  local id = "debugmaster"
-
   local root = { kind = "root", children = nil, handler = scopes.root_handler }
 
-  local update_tree = function()
-    local s = dap.session()
-    if not s or not s.current_frame then
-      return
-    end
-    scopes.fetch_frame(s, s.current_frame, function(to)
-      if not root.children then -- first init
-        root.children = { to }
-        UiManager.dashboard.view:refresh(root)
-        return
-      end
-      local from = root.children[1]
-      scopes.sync_frame(s, from, to, function()
-        root.children = { to }
-        UiManager.dashboard.view:refresh(root)
-      end)
-    end)
-  end
-
-  after.stackTrace[id] = update_tree
   api.nvim_create_autocmd("User", {
     pattern = "DmCurrentFrameChanged",
-    callback = update_tree
+    callback = function()
+      local s = dap.session()
+      if not s or not s.current_frame then
+        return
+      end
+      scopes.fetch_frame(s, s.current_frame, function(to)
+        if not root.children then -- first init
+          root.children = { to }
+          UiManager.dashboard.view:refresh(root)
+          return
+        end
+        local from = root.children[1]
+        scopes.sync_frame(s, from, to, function()
+          root.children = { to }
+          UiManager.dashboard.view:refresh(root)
+        end)
+      end)
+    end
   })
 
   return {
@@ -249,7 +235,7 @@ do
     keymaps = { "" }
   }
   ---@type dm.TreeNode
-  local root = { handler = root_handler }
+  local root = { handler = root_handler, children = {} }
   UiManager.watches = { root = root }
 end
 
@@ -284,8 +270,33 @@ UiManager.dashboard = (function()
 
   local view = tree.view.new {
     root = root,
-    keymaps = { "<CR>", "t", "c" },
+    keymaps = { "<CR>", "t", "c", "K" },
   }
+
+  api.nvim_create_autocmd("User", {
+    pattern = "DmCurrentFrameChanged",
+    callback = function()
+      for _, node in ipairs(UiManager.watches.root.children) do
+        scopes.eval({ expression = node.name }, function(res)
+          view:refresh(node)
+        end, node)
+      end
+    end,
+  })
+
+  api.nvim_buf_set_keymap(view.buf, "n", "a", "", {
+    callback = function()
+      vim.ui.input({ prompt = "Enter an expression: " }, function(res)
+        scopes.eval({ expression = res }, function(res)
+          if not res then
+            return
+          end
+          table.insert(UiManager.watches.root.children, res)
+          view:refresh(UiManager.watches.root)
+        end)
+      end)
+    end
+  })
 
   return {
     name = "[S]tate",

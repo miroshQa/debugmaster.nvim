@@ -1,5 +1,7 @@
 local dap = require("dap")
+local api = vim.api
 local tree = require("debugmaster.lib.tree")
+local view = require("debugmaster.lib.view")
 local async = require("debugmaster.lib.async")
 local dispatcher = tree.dispatcher
 
@@ -34,7 +36,7 @@ scopes.types_to_hl_group = {
 scopes.toggle_variables = function(node, event)
   local s = dap.session()
   node.collapsed = not node.collapsed
-  if s and node.variablesReference > 0 and not node.children then
+  if s and (node.variablesReference or -1) > 0 and not node.children then
     scopes.load_variables(s, node, function()
       node.collapsed = false
       event.view:refresh(node)
@@ -72,14 +74,28 @@ scopes.var_handler = dispatcher.new {
   ---@param node dm.VariablesNode
   render = function(node, event)
     local icon = node.collapsed and " " or " "
-    icon = node.variablesReference == 0 and "" or icon
+    icon = (not node.variablesReference or node.variablesReference == 0) and "" or icon
     local indent = string.rep(" ", event.depth)
+    local lines = vim.split(node.value, "\n")
     event.out.lines = {
-      { { indent }, { icon }, { node.name, "Exception" }, { " = " }, { node.value, scopes.types_to_hl_group[node.type] } }
+      { { indent }, { icon }, { node.name, "Exception" }, { " = " } }
     }
+    if #lines == 1 then
+      table.insert(event.out.lines[1], { node.value, scopes.types_to_hl_group[node.type] })
+    else
+      for _, line in ipairs(lines) do
+        table.insert(event.out.lines, { { line, "Comment" } })
+      end
+    end
   end,
   keymaps = {
     ["<CR>"] = scopes.toggle_variables,
+    K = function(node, event)
+      local buf = api.nvim_create_buf(false, true)
+      api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(vim.inspect(node), "\n"))
+      vim.treesitter.start(buf, "lua")
+      view.popup.new { buf = buf }
+    end
   }
 }
 
@@ -160,6 +176,28 @@ function scopes.sync_variables(s, from, to, cb)
     end
 
     async.await_all(tasks, cb)
+  end)
+end
+
+---@class dm.EvaluateResult
+---@field name string
+---@field value string
+---@field variablesReference number?
+
+---@param req dap.EvaluateArguments
+---@param cb fun(res: dm.EvaluateResult)
+---@param base dm.EvaluateResult?
+function scopes.eval(req, cb, base)
+  local s = assert(dap.session())
+  local res = base or {}
+  req.frameId = s.current_frame.id
+  s:request("evaluate", req, function(err, result)
+    result = result or {}
+    res.name = req.expression
+    res.value = result.result or (err.message or "unknown evaluation error")
+    res.variablesReference = result.variablesReference
+    res.handler = scopes.var_handler
+    cb(res)
   end)
 end
 
