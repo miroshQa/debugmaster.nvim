@@ -46,7 +46,18 @@ UiManager.terminal = (function()
 end)()
 
 UiManager.scopes = (function()
-  local root = { kind = "root", children = nil, handler = scopes.root_handler }
+  local root = {
+    render = function(_, out)
+      out.lines = {
+        { { "SCOPES:", "WarningMsg" }, },
+        {
+          { "1. Expand node - <CR> ",     "Comment" },
+          { "2. Expand recursively - r ", "Comment" },
+          { '3. Send to watches - a',     "Comment" },
+        }
+      }
+    end
+  }
 
   api.nvim_create_autocmd("User", {
     pattern = "DmCurFrameChanged",
@@ -55,15 +66,14 @@ UiManager.scopes = (function()
       if not s or not s.current_frame then
         return
       end
-      scopes.fetch_frame(s, s.current_frame, function(to)
-        if not root.children then -- first init
-          root.children = { to }
+      scopes.fetch_frame(s, s.current_frame, function(scopes_list)
+        if not root.children then
+          root.children = scopes_list
           UiManager.dashboard.view:refresh(root)
           return
         end
-        local from = root.children[1]
-        scopes.sync_frame(s, from, to, function()
-          root.children = { to }
+        scopes.sync_scopes(s, root.children, scopes_list, function()
+          root.children = scopes_list
           UiManager.dashboard.view:refresh(root)
         end)
       end)
@@ -78,14 +88,19 @@ end)()
 
 
 UiManager.sessions = (function()
-  local sessions = require("debugmaster.entities.sessions")
-  local root = { children = {}, handler = sessions.root_handler }
+  local root = {
+    render = function(_, out)
+      out.lines = {
+        { { "SESSIONS:", "WarningMsg" } },
+      }
+    end
+  }
   local view = tree.view.new { root = root, keymaps = { "<CR>" } }
 
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DmSessionsChanged", "DmCurrentSessionChanged" },
     callback = function()
-      root.children = sessions.construct()
+      root.children = SessionsManager.list_sessions()
       UiManager.dashboard.view:refresh(root)
     end
   })
@@ -99,19 +114,23 @@ end)()
 
 
 UiManager.breakpoints = (function()
-  local breakpoints = require("debugmaster.entities.breakpoints")
-
   local root = {
     kind = "root",
-    children = breakpoints.build_bps(SessionsManager.list_breakpoints()),
-    handler = breakpoints.root_handler
+    children = SessionsManager.list_breakpoints(),
+    render = function(_, out)
+      out.lines = {
+        { { "BREAKPOINTS:", "WarningMsg" } },
+        { { "1. t - remove breakpoint ", "Comment" }, { "2. c - change breakpoint condition", "Comment" } },
+      }
+    end
   }
+
   local view = tree.view.new { root = root, keymaps = { "<CR>", "t" } }
 
   api.nvim_create_autocmd("User", {
     pattern = "DmBpChanged",
     callback = function()
-      root.children = breakpoints.build_bps(SessionsManager.list_breakpoints())
+      root.children = SessionsManager.list_breakpoints()
       UiManager.dashboard.view:refresh(root)
     end
   })
@@ -126,8 +145,8 @@ end)()
 
 UiManager.help = (function()
   local help = require("debugmaster.entities.help")
-  ---@type dm.HelpNodeRoot
-  local root = { handler = help.help_handler, groups = {} }
+  ---@type dm.Help
+  local root = setmetatable({ groups = {} }, help.Help)
   local comp = { name = "[H]elp" }
   local view
   -- to fix loop require
@@ -148,22 +167,22 @@ end)()
 
 
 UiManager.threads = (function()
-  local threads = require("debugmaster.entities.threads")
-  ---@type dm.TreeNode
   local root = {
     children = {},
-    handler = threads.root_handler,
+    render = function(_, out)
+      out.lines = {
+        { { "THREADS", "WarningMsg" } },
+        { { "Hint: navigate frames using [s and ]s", "Comment" } }
+      }
+    end
   }
 
-  local view = tree.view.new {
-    root = root,
-    keymaps = { "<CR>" }
-  }
+  local view = tree.view.new { root = root, keymaps = { "<CR>" } }
 
   api.nvim_create_autocmd("User", {
     pattern = "DmCurFrameChanged",
     callback = function()
-      root.children = threads.construct()
+      root.children = SessionsManager.list_threads()
       UiManager.dashboard.view:refresh(root)
     end
   })
@@ -197,17 +216,16 @@ UiManager.repl = (function()
 end)()
 
 do
-  local root_handler = tree.dispatcher.new {
-    render = function(node, event)
-      event.out.lines = {
+  local root = {
+    render = function(_, out)
+      out.lines = {
         { { "WATCHES", "WarningMsg" } },
         { { "1. Remove an entry - d ", "Comment" }, { "2. X -  in debug mode to add last deleted text here", "Comment" } },
       }
     end,
-    keymaps = { "" }
+    children = {},
   }
-  ---@type dm.TreeNode
-  local root = { handler = root_handler, children = {} }
+
   UiManager.watches = {
     root = root,
     remove = function(target)
@@ -238,15 +256,12 @@ end
 
 UiManager.dashboard = (function()
   local separator = {
-    ---@type dm.TreeNodeEventHandler
-    handler = function(event)
-      if event.name == "render" then
-        event.out.lines = {
-          { { "                  " } },
-          { { "------------------" } },
-          { { "                  " } },
-        }
-      end
+    render = function(_, out)
+      out.lines = {
+        { { "                  " } },
+        { { "------------------" } },
+        { { "                  " } },
+      }
     end
   }
 

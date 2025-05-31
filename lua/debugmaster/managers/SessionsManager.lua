@@ -13,6 +13,10 @@
 
 local dap = require("dap")
 local breakpoints = require("dap.breakpoints")
+local Breakpoint = require("debugmaster.entities.breakpoints").Breakpoint
+local Thread = require("debugmaster.entities.threads").Thread
+local Frame = require("debugmaster.entities.threads").Frame
+local Session = require("debugmaster.entities.sessions").Session
 local after = dap.listeners.after
 local api = vim.api
 local id = "SesssionsManager"
@@ -26,13 +30,6 @@ local SesssionsManager = {}
 
 ---@type table<dap.Session, dm.Session>
 local sessions = {}
-
----@class dm.Breakpoint
----@field buf number
----@field condition string?
----@field line number
----@field hitCondition string
----@field logMessage string
 
 local last_config = nil
 
@@ -161,14 +158,14 @@ function SesssionsManager.list_breakpoints()
   for buf, bp_list in pairs(bps) do
     for _, bp in ipairs(bp_list) do
       ---@type dm.Breakpoint
-      local b = {
+      local b = setmetatable({
         buf = buf,
         condition = bp.condition,
         line = bp.line,
         hitCondition = bp.hitCondition,
         logMessage = bp
             .logMessage
-      }
+      }, Breakpoint)
       table.insert(res, b)
     end
   end
@@ -184,6 +181,30 @@ function SesssionsManager.remove_breakpoints(bps)
     end
   end
   api.nvim_exec_autocmds("User", { pattern = "DmBpChanged" })
+end
+
+function SesssionsManager.list_threads()
+  local s = dap.session()
+  if not s then
+    return
+  end
+  local children = {}
+  for _, thread in pairs(s.threads --[=[@as dm.Thread[]]=]) do
+    thread.children = {}
+    for _, frame in ipairs(thread.frames or {} --[=[@as dm.Frame[]]=]) do
+      table.insert(thread.children, setmetatable(frame, Frame))
+    end
+    table.insert(children, setmetatable(thread, Thread))
+  end
+  return children
+end
+
+function SesssionsManager.list_sessions()
+  local results = {}
+  for _, s in pairs(dap.sessions()) do
+    table.insert(results, setmetatable({ id = s.id, config = s.config }, Session))
+  end
+  return results
 end
 
 function SesssionsManager.set(opts, buf, line)

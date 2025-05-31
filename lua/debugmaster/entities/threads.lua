@@ -1,83 +1,54 @@
-local tree = require("debugmaster.lib.tree")
-local SessionManager = require("debugmaster.managers.SessionsManager")
 local dap = require("dap")
 
 local threads = {}
 
+---@class dm.Thread: dap.Thread, dm.TreeNode
+local Thread = {}
+---@private
+Thread.__index = Thread
 
----@alias dm.ThreadsRootNode {kind: "root", children: dm.ThreadsNode}
-
----@class dm.ThreadsNode: dap.Thread, dm.TreeNode
----@field collapsed? boolean
----@field children dm.FrameNode[]
-
----@class dm.FrameNode: dap.StackFrame, dm.TreeNode
-
----@alias dm.ThreadsTreeNode dm.ThreadsNode | dm.FrameNode | dm.ThreadsRootNode
-
-threads.root_handler = tree.dispatcher.new {
-  render = function(node, event)
-    event.out.lines = {
-      { { "THREADS", "WarningMsg" } },
-      { { "Hint: navigate frames using [s and ]s", "Comment" } }
-    }
-  end,
-  keymaps = {},
-}
-
-threads.thread_handler = tree.dispatcher.new {
-  ---@param node dm.ThreadsNode
-  render = function(node, event)
-    local icon = node.collapsed and "  " or "  "
-    local thread_name = string.format("[%s] Thread name: %s", tostring(node.id), node.name)
-    event.out.lines = {
-      { { icon }, { thread_name } },
-    }
-  end,
-  ---@type table<string, fun(node: dm.ThreadsNode, event: dm.TreeNodeKeymapEvent)>
-  keymaps = {
-    ["<CR>"] = function(node, event)
-      node.collapsed = not node.collapsed
-      event.view:refresh(node)
-    end
+---@type dm.TreeNodeRenderer
+function Thread:render(out)
+  local icon = self.collapsed and "  " or "  "
+  local thread_name = string.format("[%s] Thread name: %s", tostring(self.id), self.name)
+  out.lines = {
+    { { icon }, { thread_name } },
   }
-}
-
-threads.frame_handler = tree.dispatcher.new {
-  ---@param node dm.FrameNode
-  render = function(node, event)
-    local icon = SessionManager.is_current_frame(node) and "  " or ""
-    local path = (node.source or {}).path
-    path = path and vim.fn.fnamemodify(path, ":.") or "unknown"
-    event.out.lines = {
-      { { "  " }, { icon .. node.name }, { string.format(" (%s)", path), "Comment" } },
-    }
-  end,
-  ---@type table<string, fun(node: dm.FrameNode, event: dm.TreeNodeKeymapEvent)>
-  keymaps = {
-    ["<CR>"] = function(node, event)
-      SessionManager.set_current_frame(node)
-      event.view:refresh()
-    end
-  }
-}
-
-function threads.construct()
-  local s = dap.session()
-  if not s then
-    return
-  end
-  local children = {}
-  for _, thread in pairs(s.threads --[=[@as dm.ThreadsNode[]]=]) do
-    thread.handler = threads.thread_handler
-    thread.children = {}
-    for _, frame in ipairs(thread.frames or {} --[=[@as dm.FrameNode[]]=]) do
-      frame.handler = threads.frame_handler
-      table.insert(thread.children, frame)
-    end
-    table.insert(children, thread)
-  end
-  return children
 end
+
+---@type table<string, fun(node: dm.Thread, view: dm.TreeView)>
+Thread.keymaps = {
+  ["<CR>"] = function(node, view)
+    node.collapsed = not node.collapsed
+    view:refresh(node)
+  end
+}
+
+---@class dm.Frame: dap.StackFrame
+local Frame = {}
+---@private
+Frame.__index = Frame
+
+function Frame:render(out)
+  local SessionManager = require("debugmaster.managers.SessionsManager")
+  local icon = SessionManager.is_current_frame(self) and "  " or ""
+  local path = (self.source or {}).path
+  path = path and vim.fn.fnamemodify(path, ":.") or "unknown"
+  out.lines = {
+    { { "  " }, { icon .. self.name }, { string.format(" (%s)", path), "Comment" } },
+  }
+end
+
+---@type table<string, fun(node: dm.Frame, view: dm.TreeView)>
+Frame.keymaps = {
+  ["<CR>"] = function(node, view)
+    local SessionManager = require("debugmaster.managers.SessionsManager")
+    SessionManager.set_current_frame(node)
+    view:refresh()
+  end
+}
+
+threads.Frame = Frame
+threads.Thread = Thread
 
 return threads

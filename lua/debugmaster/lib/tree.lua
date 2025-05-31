@@ -5,28 +5,13 @@ local tree = {}
 ---@alias dm.HlSegment [string, string] First is text, second is highlight group.
 ---@alias dm.HlLine dm.HlSegment[]
 
----@class dm.TreeNodeRenderEvent
----@field name "render"
----@field node dm.TreeNode
----@field depth number
----@field parent dm.TreeNode
----@field out {lines: dm.HlLine[]?}
-
----@class dm.TreeNodeKeymapEvent
----@field name "keymap"
----@field node dm.TreeNode
----@field key string
----@field view dm.TreeView
----@field out nil
-
----@alias dm.TreeNodeEvent
----| dm.TreeNodeRenderEvent
----| dm.TreeNodeKeymapEvent
-
----@alias dm.TreeNodeEventHandler fun(event: dm.TreeNodeEvent)
+---@alias dm.TreeNodeRendererOut {lines: dm.HlLine[]}
+---@alias dm.TreeNodeRenderer fun(self: dm.TreeNode, out: dm.TreeNodeRendererOut, parent: dm.TreeNode, depth: number)
+---@alias dm.TreeNodeKeymapHandler fun(self: dm.TreeNode, view: dm.TreeView)
 
 ---@class dm.TreeNode
----@field handler dm.TreeNodeEventHandler?
+---@field render dm.TreeNodeRenderer?
+---@field keymaps table<string, dm.TreeNodeKeymapHandler>?
 ---@field collapsed boolean?
 ---@field children dm.TreeNode[]?
 
@@ -96,15 +81,15 @@ function tree.render(params)
   local nodes_info = base.nodes_info or {} ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
   local marks = {} ---@type {node: dm.TreeNode, row: number, end_row: number}[]
 
+  ---@param node dm.TreeNode
   local function render(node, depth, parent)
-    ---@type dm.TreeNodeRenderEvent
-    local event = { name = "render", node = node, depth = depth, parent = parent, out = {} }
-    if node.handler then
-      node.handler(event)
+    local out = {}
+    if node.render then
+      node:render(out, parent, depth)
     end
 
     local node_start = line_num
-    local lines = event.out.lines or {}
+    local lines = out.lines or {}
     nodes_info[node] = { depth = depth, len = 0, extmark_id = 0, parent = parent }
     if #lines ~= 0 then
       table.insert(marks, { node = node, row = line_num, end_row = line_num + #lines - 1 })
@@ -247,34 +232,14 @@ function tree.view.new(params)
       nowait = true,
       callback = function()
         local node = self.snapshot:get()
-        ---@type dm.TreeNodeKeymapEvent
-        local event = { name = "keymap", node = node, key = key, view = self }
-        node.handler(event)
+        if not node.keymaps or not node.keymaps[key] then
+          return
+        end
+        node.keymaps[key](node, self)
       end
     })
   end
   return self
-end
-
-tree.dispatcher = {}
-
----@class dm.TreeNodeEventDispatcherParams
----@field render fun(node: dm.TreeNode, event: dm.TreeNodeRenderEvent)
----@field keymaps table<string, fun(node: dm.TreeNode, event: dm.TreeNodeKeymapEvent)>
-
----@param params dm.TreeNodeEventDispatcherParams
----@return dm.TreeNodeEventHandler
-function tree.dispatcher.new(params)
-  return function(event)
-    if event.name == "render" then
-      params.render(event.node, event)
-    elseif event.name == "keymap" then
-      local handler = params.keymaps[event.key]
-      if handler then
-        handler(event.node, event)
-      end
-    end
-  end
 end
 
 return tree
