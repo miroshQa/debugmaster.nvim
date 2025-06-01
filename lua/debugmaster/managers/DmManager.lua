@@ -26,10 +26,10 @@ local move_debugger = {
   name = "MOVE DEBUGGER",
   hlgroup = "ERROR",
   mappings = {
-    { key = "o", action = dap.step_over,     desc = "Step over. Works with count (Try to type '5o')" },
-    { key = "m", action = dap.step_into,     desc = "Step into (mine deeper)" },
-    { key = "q", action = dap.step_out,      desc = "Step out ([q]uit current stack frame)" },
-    { key = "c", action = dap.continue,      desc = "Continue or start debug session" },
+    { key = "o", action = dap.step_over, desc = "Step over. Works with count (Try to type '5o')" },
+    { key = "m", action = dap.step_into, desc = "Step into (mine deeper)" },
+    { key = "q", action = dap.step_out, desc = "Step out ([q]uit current stack frame)" },
+    { key = "c", action = dap.continue, desc = "Continue or start debug session" },
     { key = "r", action = dap.run_to_cursor, desc = "Run to cursor" },
   }
 }
@@ -39,16 +39,16 @@ local sidepanel = {
   name = "SIDEPANEL",
   hlgroup = "STRING",
   mappings = {
-    { key = "u", action = function() UiManager.sidepanel:toggle() end,                                  desc = "Toggle ui", },
-    { key = "U", action = function() UiManager.sidepanel:toggle_layout() end,                           desc = "Toggle ui float mode" },
+    { key = "u", action = function() UiManager.sidepanel:toggle() end, desc = "Toggle ui", },
+    { key = "U", action = function() UiManager.sidepanel:toggle_layout() end, desc = "Toggle ui float mode" },
     { key = "S", action = function() UiManager.sidepanel:set_active_with_open(UiManager.dashboard) end, desc = "Open state", },
-    { key = "T", action = function() UiManager.sidepanel:set_active_with_open(UiManager.terminal) end,  desc = "Open terminal", },
-    { key = "R", action = function() UiManager.sidepanel:set_active_with_open(UiManager.repl) end,      desc = "Open repl", },
-    { key = "H", action = function() UiManager.sidepanel:set_active_with_open(UiManager.help) end,      desc = "Open help" },
-    { key = "}", action = function() UiManager.sidepanel:rotate(1) end,                                 desc = "Rotate sidenapel clockwise" },
-    { key = "{", action = function() UiManager.sidepanel:rotate(-1) end,                                desc = "Rotate sidenapel anticlockwise" },
-    { key = "-", action = function() UiManager.sidepanel:resize(-10) end,                               desc = "Decrease sidenapel size" },
-    { key = "+", action = function() UiManager.sidepanel:resize(10) end,                                desc = "Increase sidepanel size" }
+    { key = "T", action = function() UiManager.sidepanel:set_active_with_open(UiManager.terminal) end, desc = "Open terminal", },
+    { key = "R", action = function() UiManager.sidepanel:set_active_with_open(UiManager.repl) end, desc = "Open repl", },
+    { key = "H", action = function() UiManager.sidepanel:set_active_with_open(UiManager.help) end, desc = "Open help" },
+    { key = "}", action = function() UiManager.sidepanel:rotate(1) end, desc = "Rotate sidenapel clockwise" },
+    { key = "{", action = function() UiManager.sidepanel:rotate(-1) end, desc = "Rotate sidenapel anticlockwise" },
+    { key = "-", action = function() UiManager.sidepanel:resize(-10) end, desc = "Decrease sidenapel size" },
+    { key = "+", action = function() UiManager.sidepanel:resize(10) end, desc = "Increase sidepanel size" }
   }
 }
 
@@ -85,7 +85,7 @@ local float_widgets = {
       key = "I",
       modes = { "n", "v" },
       action = function()
-        pcall(require('dap.ui.widgets').hover)
+        pcall(require("dap.ui.widgets").hover)
         view.close_on_q(view.close_on_leave(api.nvim_get_current_win()))
       end,
       desc = "Inspect variable or visually selected expression",
@@ -98,12 +98,12 @@ local breakpoings_group = {
   name = "BREAKPOINTS",
   hlgroup = "Boolean",
   mappings = {
-    { key = "t",  action = SessionsManager.toggle_breakpoint, desc = "Toggle breakpoint", },
+    { key = "t", action = SessionsManager.toggle_breakpoint, desc = "Toggle breakpoint", },
     { key = "da", action = SessionsManager.clear_breakpoints, desc = "Delete all breakpoints", },
     {
       key = "dc",
       action = function()
-        local condition = vim.fn.input({ prompt = "Enter breakpoing condition: " })
+        local condition = vim.fn.input { prompt = "Enter breakpoing condition: " }
         if condition ~= "" then
           SessionsManager.toggle_breakpoint(condition)
         end
@@ -142,9 +142,9 @@ local misc_group = {
       end,
       desc = "Quit debug"
     },
-    { key = "[s", action = SessionsManager.frame_down,       desc = "Go to previous stack frame" },
-    { key = "]s", action = SessionsManager.frame_up,         desc = "Go to next stack frame" },
-    { key = "dj", action = dap.focus_frame,                  desc = "Jump to the current stack frame" },
+    { key = "[s", action = SessionsManager.frame_down, desc = "Go to previous stack frame" },
+    { key = "]s", action = SessionsManager.frame_up, desc = "Go to next stack frame" },
+    { key = "dj", action = dap.focus_frame, desc = "Jump to the current stack frame" },
     {
       key = "x",
       action = function()

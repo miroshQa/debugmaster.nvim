@@ -131,7 +131,7 @@ function MultiWin:rotate(step)
       -- let's pretend array starts with zero (hence i - 1)
       local index = ((i - 1) + step) % #directions
       local next = directions[index + 1]
-      self:open({ direction = next })
+      self:open { direction = next }
     end
   end
   if was_focused then
@@ -153,7 +153,7 @@ function MultiWin:toggle_layout()
     self:open()
   end
   self:close()
-  self:open({ float = not self.float })
+  self:open { float = not self.float }
 end
 
 ---@param comp dm.ui.MultiWinComp

@@ -223,7 +223,7 @@ function tree.view.new(params)
   local self = setmetatable({
     buf = buf,
     root = params.root,
-    snapshot = tree.render({ buf = buf, root = params.root }),
+    snapshot = tree.render { buf = buf, root = params.root },
   }, TreeViewMethods)
 
   for _, key in pairs(keymaps) do

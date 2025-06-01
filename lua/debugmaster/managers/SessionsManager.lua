@@ -164,7 +164,7 @@ function SesssionsManager.list_breakpoints()
         line = bp.line,
         hitCondition = bp.hitCondition,
         logMessage = bp
-            .logMessage
+          .logMessage
       }, Breakpoint)
       table.insert(res, b)
     end

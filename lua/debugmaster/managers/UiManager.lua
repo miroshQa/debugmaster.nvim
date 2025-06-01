@@ -51,9 +51,9 @@ UiManager.scopes = (function()
       out.lines = {
         { { "SCOPES:", "WarningMsg" }, },
         {
-          { "1. Expand node - <CR> ",     "Comment" },
+          { "1. Expand node - <CR> ", "Comment" },
           { "2. Expand recursively - r ", "Comment" },
-          { '3. Send to watches - a',     "Comment" },
+          { "3. Send to watches - a", "Comment" },
         }
       }
     end

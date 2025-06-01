@@ -1,9 +1,9 @@
-local dap               = require("dap")
-local api               = vim.api
-local uv                = vim.uv
-local async             = require("debugmaster.lib.async")
+local dap = require("dap")
+local api = vim.api
+local uv = vim.uv
+local async = require("debugmaster.lib.async")
 
-local scopes            = {}
+local scopes = {}
 
 scopes.toggle_variables = function(node, view)
   local s = dap.session()
@@ -23,7 +23,7 @@ end
 ---@class dm.Variable: dm.TreeNode, dap.Variable
 ---@field children dm.Variable[]
 ---@field child_by_name table<string, dm.Variable>
-local Variable   = {}
+local Variable = {}
 ---@private
 Variable.__index = Variable
 
@@ -82,9 +82,9 @@ Variable.keymaps = {
 ---@class dm.Scope: dm.TreeNode, dap.Scope
 ---@field child_by_name table<string, dm.Variable>
 ---@field children dm.Variable[]
-local Scope      = {}
+local Scope = {}
 ---@private
-Scope.__index    = Scope
+Scope.__index = Scope
 
 ---@type dm.TreeNodeRenderer
 function Scope:render(out)

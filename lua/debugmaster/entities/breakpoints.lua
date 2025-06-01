@@ -39,10 +39,10 @@ Breakpoint.keymaps = {
   end,
   t = function(node)
     local SessionsManager = require("debugmaster.managers.SessionsManager")
-    SessionsManager.remove_breakpoints({ node })
+    SessionsManager.remove_breakpoints { node }
   end,
   ["<CR>"] = function(node)
-    local win = vim.fn.win_getid(vim.fn.winnr('#'))
+    local win = vim.fn.win_getid(vim.fn.winnr("#"))
     if win == 0 then
       win = api.nvim_open_win(node.buf, true, { split = "left", win = -1 })
     end

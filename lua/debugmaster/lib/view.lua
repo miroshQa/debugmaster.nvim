@@ -16,10 +16,10 @@ function view.new_float_anchored(buf)
   local win_config = {
     row = 0,
     col = 0,
-    relative = 'cursor',
+    relative = "cursor",
     width = width,
     height = height,
-    style = 'minimal',
+    style = "minimal",
     border = "rounded",
     focusable = true
   }

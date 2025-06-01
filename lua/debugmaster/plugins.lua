@@ -97,7 +97,7 @@ plugins.osv_integration = {
           vim.opt.rtp:prepend(vars.dap_path)
           vim.opt.rtp:prepend(vars.osv_path)
           -- disable output because it significantly degrade performance
-          require('osv').launch({ blocking = true, port = vars.port, output = false })
+          require("osv").launch { blocking = true, port = vars.port, output = false }
         end
         ---@class init-vars
         local vars = {
@@ -121,14 +121,14 @@ plugins.osv_integration = {
           ui.sidepanel:set_active(ui.terminal)
           dap.listeners.after.initialize[id] = nil
         end
-        callback({ type = 'server', host = "127.0.0.1", port = vars.port })
+        callback { type = "server", host = "127.0.0.1", port = vars.port }
       end
     end)()
 
     dap.configurations.lua = dap.configurations.lua or {}
     table.insert(dap.configurations.lua, {
-      type = 'debugmasterosv',
-      request = 'attach',
+      type = "debugmasterosv",
+      request = "attach",
       name = "Debug neovim (lua). Provided by debugmaster.nvim",
     })
   end
