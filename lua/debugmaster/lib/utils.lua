@@ -79,4 +79,27 @@ function utils.get_file_icon()
 end
 
 
+---inspect with ignoreed property
+function utils.iinspect(obj, should_ignore)
+  ---@type {cur: any, property: any, value: any}[]
+  local removed = {}
+
+  local function traverse(cur)
+    for property, value in pairs(cur) do
+      if should_ignore(property) then
+        table.insert(removed, { cur = cur, property = property, value = value })
+        cur[property] = nil
+      elseif type(value) == "table" then
+        traverse(value)
+      end
+    end
+  end
+  traverse(obj)
+  local representation = vim.inspect(obj)
+  for _, entry in ipairs(removed) do
+    entry.cur[entry.property] = entry.value
+  end
+  return representation
+end
+
 return utils

@@ -13,15 +13,20 @@
 
 local dap = require("dap")
 local breakpoints = require("dap.breakpoints")
-local Breakpoint = require("debugmaster.entities.breakpoints").Breakpoint
-local Thread = require("debugmaster.entities.threads").Thread
-local Frame = require("debugmaster.entities.threads").Frame
-local Session = require("debugmaster.entities.sessions").Session
 local after = dap.listeners.after
 local api = vim.api
 local id = "SesssionsManager"
 
 local SesssionsManager = {}
+
+
+---@class dm.Breakpoint
+---@field buf number
+---@field condition string?
+---@field line number
+---@field hitCondition string
+---@field logMessage string
+
 
 ---@class dm.Session
 ---@field terminal number?
@@ -63,19 +68,20 @@ end
 function SesssionsManager.launch()
 end
 
----@param new dap.StackFrame
-function SesssionsManager.set_current_frame(new)
+---@param frameId integer
+function SesssionsManager.set_current_frame(frameId)
   local s = assert(dap.session())
-  s:_frame_set(new)
+  local frame = s.threads[assert(s.stopped_thread_id)].frames[assert(frameId)]
+  s:_frame_set(frame)
   api.nvim_exec_autocmds("User", { pattern = "DmCurFrameChanged" })
 end
 
 ---comment
----@param frame dap.StackFrame
+---@param frameId integer
 ---@return boolean
-function SesssionsManager.is_current_frame(frame)
+function SesssionsManager.is_current_frame(frameId)
   local s = dap.session()
-  if s and s.current_frame then return s.current_frame.id == frame.id else return false end
+  if s and s.current_frame then return s.current_frame.id == frameId else return false end
 end
 
 function SesssionsManager.run_last_cached()
@@ -158,53 +164,26 @@ function SesssionsManager.list_breakpoints()
   for buf, bp_list in pairs(bps) do
     for _, bp in ipairs(bp_list) do
       ---@type dm.Breakpoint
-      local b = setmetatable({
+      local b = {
         buf = buf,
         condition = bp.condition,
         line = bp.line,
         hitCondition = bp.hitCondition,
-        logMessage = bp
-          .logMessage
-      }, Breakpoint)
+        logMessage = bp.logMessage
+      }
       table.insert(res, b)
     end
   end
   return res
 end
 
----@param bps dm.Breakpoint[]
-function SesssionsManager.remove_breakpoints(bps)
-  for _, bp in ipairs(bps) do
-    breakpoints.remove(bp.buf, bp.line)
-    for _, session in pairs(dap.sessions()) do
-      session:set_breakpoints(breakpoints.get(bp.buf))
-    end
+---@param bp dm.Breakpoint
+function SesssionsManager.remove_breakpoint(bp)
+  breakpoints.remove(bp.buf, bp.line)
+  for _, session in pairs(dap.sessions()) do
+    session:set_breakpoints(breakpoints.get(bp.buf))
   end
   api.nvim_exec_autocmds("User", { pattern = "DmBpChanged" })
-end
-
-function SesssionsManager.list_threads()
-  local s = dap.session()
-  if not s then
-    return
-  end
-  local children = {}
-  for _, thread in pairs(s.threads --[=[@as dm.Thread[]]=]) do
-    thread.children = {}
-    for _, frame in ipairs(thread.frames or {} --[=[@as dm.Frame[]]=]) do
-      table.insert(thread.children, setmetatable(frame, Frame))
-    end
-    table.insert(children, setmetatable(thread, Thread))
-  end
-  return children
-end
-
-function SesssionsManager.list_sessions()
-  local results = {}
-  for _, s in pairs(dap.sessions()) do
-    table.insert(results, setmetatable({ id = s.id, config = s.config }, Session))
-  end
-  return results
 end
 
 function SesssionsManager.set(opts, buf, line)

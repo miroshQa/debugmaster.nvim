@@ -5,28 +5,32 @@ local tree = {}
 ---@alias dm.HlSegment [string, string] First is text, second is highlight group.
 ---@alias dm.HlLine dm.HlSegment[]
 
----@alias dm.TreeNodeRendererOut {lines: dm.HlLine[]}
----@alias dm.TreeNodeRenderer fun(self: dm.TreeNode, out: dm.TreeNodeRendererOut, parent: dm.TreeNode, depth: number)
----@alias dm.TreeNodeKeymapHandler fun(self: dm.TreeNode, view: dm.TreeView)
+---@class dm.WidgetRendererCtx Context
+---@field parent dm.Widget
+---@field depth integer
 
----@class dm.TreeNode
----@field render dm.TreeNodeRenderer?
----@field keymaps table<string, dm.TreeNodeKeymapHandler>?
+---@alias dm.WidgetRendererOut {lines: dm.HlLine[]}
+---@alias dm.WidgetRenderer fun(self: dm.Widget, out: dm.WidgetRendererOut, parent: dm.Widget, depth: number)
+---@alias dm.WidgetKeymapHandler fun(self: dm.Widget, view: dm.TreeView)
+
+---@class dm.Widget
+---@field render dm.WidgetRenderer?
+---@field keymaps table<string, dm.WidgetKeymapHandler>?
 ---@field collapsed boolean?
----@field children dm.TreeNode[]?
+---@field children dm.Widget[]?
 
 ---@class dm.SnapshotNodeInfo
 ---@field extmark_id number
 ---@field len number amount of lines including children
 ---@field depth number
----@field parent dm.TreeNode?
+---@field parent dm.Widget?
 
 ---@class dm.TreeRenderSnapshot
 ---@field buf number
----@field root dm.TreeNode
+---@field root dm.Widget
 ---@field extmarks_ns number
----@field node_by_extmark_id table<number, dm.TreeNode>
----@field nodes_info table<dm.TreeNode, dm.SnapshotNodeInfo>
+---@field node_by_extmark_id table<number, dm.Widget>
+---@field nodes_info table<dm.Widget, dm.SnapshotNodeInfo>
 local SnapshotMethods = {}
 ---@private
 SnapshotMethods.__index = SnapshotMethods
@@ -55,11 +59,11 @@ end
 
 ---@class dm.TreeRenderParams
 ---@field buf number
----@field root dm.TreeNode
+---@field root dm.Widget
 ---@field start number? starts with 0 like in api.set_lines. 0 by default
 ---@field end_ number? like in api.set_lines. -1 by default
 ---@field depth number? starting depth
----@field parent dm.TreeNode? start parent for root
+---@field parent dm.Widget? start parent for root
 ---@field base? dm.TreeRenderSnapshot base snapshot
 
 ---Render tree like structure conforming to the
@@ -78,10 +82,10 @@ function tree.render(params)
   local result_lines = {}
   local line_num = start
   local highlights = {} ---@type {line: number, hl: string, col_start: number, col_end: number}[]
-  local nodes_info = base.nodes_info or {} ---@type table<dm.TreeNode, dm.SnapshotNodeInfo>
-  local marks = {} ---@type {node: dm.TreeNode, row: number, end_row: number}[]
+  local nodes_info = base.nodes_info or {} ---@type table<dm.Widget, dm.SnapshotNodeInfo>
+  local marks = {} ---@type {node: dm.Widget, row: number, end_row: number}[]
 
-  ---@param node dm.TreeNode
+  ---@param node dm.Widget
   local function render(node, depth, parent)
     local out = {}
     if node.render then
@@ -158,14 +162,14 @@ end
 
 ---@class dm.TreeView
 ---@field snapshot dm.TreeRenderSnapshot
----@field root dm.TreeNode
+---@field root dm.Widget
 ---@field buf number
 local TreeViewMethods = {}
 ---@private
 TreeViewMethods.__index = TreeViewMethods
 
 ---Partial rerenders node
----@param node dm.TreeNode? self.root if nil
+---@param node dm.Widget? self.root if nil
 function TreeViewMethods:refresh(node)
   node = node or self.root
   local nodes_info = self.snapshot.nodes_info
@@ -211,7 +215,7 @@ function TreeViewMethods:refresh(node)
 end
 
 ---@class dm.TreeViewParams
----@field root dm.TreeNode
+---@field root dm.Widget
 ---@field keymaps string[] Those keymaps will trigger keymap event for underlying cursor node
 
 tree.view = {}

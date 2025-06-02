@@ -1,14 +1,11 @@
-local help = {}
-
-
----@class dm.Help: dm.TreeNode
+---@class dm.HelpWidget: dm.Widget
 ---@field groups dm.MappingsGroup[]
-local Help = {}
+local HelpWidget = {}
 ---@private
-Help.__index = Help
+HelpWidget.__index = HelpWidget
 
----@type dm.TreeNodeRenderer
-function Help:render(out)
+---@type dm.WidgetRenderer
+function HelpWidget:render(out)
   local lines = {}
   for _, group in ipairs(self.groups) do
     table.insert(lines, { { group.name, group.hlgroup } })
@@ -24,8 +21,10 @@ function Help:render(out)
   out.lines = lines
 end
 
-Help.keymaps = {}
+function HelpWidget.new(groups)
+  return setmetatable({ groups = groups }, HelpWidget)
+end
 
-help.Help = Help
+HelpWidget.keymaps = {}
 
-return help
+return HelpWidget
