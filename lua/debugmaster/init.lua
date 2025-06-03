@@ -1,4 +1,5 @@
 local M = {}
+require("debugmaster.lib.utils")
 
 M.cfg = require("debugmaster.cfg")
 

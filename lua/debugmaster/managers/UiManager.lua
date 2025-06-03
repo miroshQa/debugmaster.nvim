@@ -2,6 +2,7 @@
 local dap = require("dap")
 local SessionWidget = require("debugmaster.widgets.SessionWidget")
 local tree = require("debugmaster.lib.tree")
+local common = require("debugmaster.widgets.common")
 local after = dap.listeners.after
 local SessionsManager = require("debugmaster.managers.SessionsManager")
 local api = vim.api
@@ -301,8 +302,11 @@ UiManager.dashboard = (function()
     local prev_ui = root.children[1]
     local new_ui = SessionWidget.new(session)
     if prev_ui then
-      print("syncing with prev ui")
-      new_ui:sync(prev_ui, function()
+      -- print("prev ui before sync", iinspect(prev_ui, ignore))
+      -- print("new ui before sync", iinspect(new_ui, ignore))
+      -- print("")
+      common.sync(new_ui, prev_ui, function()
+        -- print("new ui after sync", iinspect(new_ui, ignore))
         root.children = { new_ui }
         view:refresh()
       end)

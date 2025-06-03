@@ -44,6 +44,7 @@ function FrameWidget:load(cb)
   ---@param err any
   ---@param result dap.ScopesResponse
   self.session:request("scopes", { frameId = self.id }, function(err, result)
+    print("scopes are fetched: ", iinspect(result.scopes, ignore))
     assert(not err)
     for _, scope in ipairs(result.scopes) do
       local widget = ScopeWidget.new(self.session, scope)
@@ -52,13 +53,6 @@ function FrameWidget:load(cb)
     end
     cb()
   end)
-end
-
----@param from dm.FrameWidget
----@param cb fun() on done
-function FrameWidget:sync(from, cb)
-  print(self == from)
-  common.sync(self, from, cb)
 end
 
 ---@type table<string, fun(self: dm.FrameWidget, view: dm.TreeView)>

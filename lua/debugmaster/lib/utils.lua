@@ -80,7 +80,7 @@ end
 
 
 ---inspect with ignoreed property
-function utils.iinspect(obj, should_ignore)
+function iinspect(obj, should_ignore)
   ---@type {cur: any, property: any, value: any}[]
   local removed = {}
 
@@ -101,5 +101,22 @@ function utils.iinspect(obj, should_ignore)
   end
   return representation
 end
+
+local banned = {
+  ["$__lldb_extensions"] = true,
+  ["session"] = true,
+  ["Globals"] = true,
+  ["Registers"] = true,
+}
+
+function ignore(property)
+  return banned[property] == true
+end
+
+function wtf(self, from, type)
+  print(string.format("syncing self %s: %s"), type, iinspect(self, ignore))
+  print("from %s: %s", type, iinspect(from, ignore))
+end
+
 
 return utils

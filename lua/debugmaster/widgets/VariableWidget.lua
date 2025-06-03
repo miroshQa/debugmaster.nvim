@@ -46,7 +46,7 @@ end
 ---@param var dap.Variable
 ---@return dm.VariableWidget
 function VariableWidget.new(session, var)
-  local self = setmetatable(var, VariableWidget)
+  local self = setmetatable(vim.deepcopy(var), VariableWidget)
   self.collapsed = true
   self.session = session
   ---@diagnostic disable-next-line: return-type-mismatch
@@ -71,12 +71,6 @@ function VariableWidget:load(cb)
     end
     cb()
   end)
-end
-
----@param from dm.VariableWidget
----@param cb fun() called on done
-function VariableWidget:sync(from, cb)
-  common.sync(self, from, cb)
 end
 
 ---@param timeout integer

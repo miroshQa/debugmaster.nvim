@@ -4,7 +4,6 @@ local async = require("debugmaster.lib.async")
 local SessionManager = require("debugmaster.managers.SessionsManager")
 local FrameWidget = require("debugmaster.widgets.FrameWidget")
 local common = require("debugmaster.widgets.common")
-local iinspect = require("debugmaster.lib.utils").iinspect
 
 ---@class dm.ThreadWidget: dap.Thread, dm.Widget
 ---@field session dap.Session
@@ -36,6 +35,9 @@ end
 
 ---@param cb fun() called on done
 function ThreadWidget:load(cb)
+  if self.children then
+    return cb()
+  end
   self.child_by_name = {}
   self.children = {}
   ---@param result dap.StackTraceResponse
@@ -47,21 +49,6 @@ function ThreadWidget:load(cb)
     end
     cb()
   end)
-end
-
-
-local ignore = function(property)
-  return property == "session" or property == "Globals"
-end
-local function debug(self, from)
-  vim.print("syncing self: ", iinspect(self, ignore), "with: from", iinspect(from, ignore))
-end
-
----@param from dm.FrameWidget
----@param cb fun() on done
-function ThreadWidget:sync(from, cb)
-  debug(self, from)
-  common.sync(self, from, cb)
 end
 
 ---@type table<string, fun(node: dm.ThreadWidget, view: dm.TreeView)>

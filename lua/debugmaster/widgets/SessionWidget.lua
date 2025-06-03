@@ -30,21 +30,20 @@ function SessionWidget.new(session)
 end
 
 function SessionWidget:load(cb)
+  if self.children then
+    return cb()
+  end
   self.children = {}
   self.child_by_name = {}
   self.session:request("threads", nil, function(err, result)
     assert(not err)
-    for _, thread in pairs(result.threads) do
+    for _, thread in ipairs(result.threads) do
       local widget = ThreadWidget.new(self.session, thread)
       self.child_by_name[thread.name] = widget
       table.insert(self.children, widget)
     end
     cb()
   end)
-end
-
-function SessionWidget:sync(from, cb)
-  common.sync(self, from, cb)
 end
 
 ---@type table<string, fun(node: dm.SessionWidget, view: dm.TreeView)>

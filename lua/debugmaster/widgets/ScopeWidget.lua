@@ -39,21 +39,15 @@ function ScopeWidget:load(cb)
   VariableWidget.load(self, cb)
 end
 
----@param from dm.ScopeWidget
----@param cb fun() called on done
-function ScopeWidget:sync(from, cb)
-  common.sync(self, from, cb)
-end
-
 ---@type table<string, fun(self: dm.ScopeWidget, view: dm.TreeView)>
 ScopeWidget.keymaps = {
   ["<CR>"] = function(self, view)
-    print("start loading")
     self:load(function()
       self.collapsed = not self.collapsed
       view:refresh(self)
     end)
-  end
+  end,
+  ["K"] = common.inspect
 }
 
 return ScopeWidget
