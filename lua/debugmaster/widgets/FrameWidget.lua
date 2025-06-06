@@ -44,7 +44,6 @@ function FrameWidget:load(cb)
   ---@param err any
   ---@param result dap.ScopesResponse
   self.session:request("scopes", { frameId = self.id }, function(err, result)
-    print("scopes are fetched: ", iinspect(result.scopes, ignore))
     assert(not err)
     for _, scope in ipairs(result.scopes) do
       local widget = ScopeWidget.new(self.session, scope)

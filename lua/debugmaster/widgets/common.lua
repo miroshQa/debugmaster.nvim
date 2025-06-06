@@ -3,8 +3,6 @@ local async = require("debugmaster.lib.async")
 
 local common = {}
 
----@class dm.LoadableWidge
-
 function common.inspect(node)
   local buf = api.nvim_create_buf(false, true)
   api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(iinspect(node, ignore), "\n"))

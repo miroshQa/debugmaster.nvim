@@ -295,18 +295,12 @@ UiManager.dashboard = (function()
       return
     end
 
-    -- root.children = { SessionWidget.new(session) }
-    -- view:refresh()
     ---@type dm.SessionWidget
     ---@diagnostic disable-next-line: assign-type-mismatch
     local prev_ui = root.children[1]
     local new_ui = SessionWidget.new(session)
     if prev_ui then
-      -- print("prev ui before sync", iinspect(prev_ui, ignore))
-      -- print("new ui before sync", iinspect(new_ui, ignore))
-      -- print("")
       common.sync(new_ui, prev_ui, function()
-        -- print("new ui after sync", iinspect(new_ui, ignore))
         root.children = { new_ui }
         view:refresh()
       end)
