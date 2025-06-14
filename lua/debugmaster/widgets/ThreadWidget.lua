@@ -51,12 +51,12 @@ function ThreadWidget:load(cb)
   end)
 end
 
----@type table<string, fun(node: dm.ThreadWidget, view: dm.TreeView)>
+---@type table<string, fun(node: dm.ThreadWidget, canvas: dm.Canvas)>
 ThreadWidget.keymaps = {
-  ["<CR>"] = function(self, view)
+  ["<CR>"] = function(self, canvas)
     self:load(function()
       self.collapsed = not self.collapsed
-      view:refresh(self)
+      canvas:refresh(self)
     end)
   end
 }

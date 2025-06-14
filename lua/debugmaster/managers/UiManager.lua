@@ -1,7 +1,7 @@
 -- UiController and access for each its element provider
 local dap = require("dap")
 local SessionWidget = require("debugmaster.widgets.SessionWidget")
-local tree = require("debugmaster.lib.tree")
+local ui = require("debugmaster.lib.ui")
 local common = require("debugmaster.widgets.common")
 local after = dap.listeners.after
 local SessionsManager = require("debugmaster.managers.SessionsManager")
@@ -110,7 +110,7 @@ end)()
 --     pattern = { "DmSessionsChanged", "DmCurrentSessionChanged" },
 --     callback = function()
 --       root.children = SessionsManager.list_sessions()
---       UiManager.dashboard.view:refresh(root)
+--       UiManager.dashboard.canvas:refresh(root)
 --     end
 --   })
 --
@@ -140,7 +140,7 @@ end)()
 --     pattern = "DmBpChanged",
 --     callback = function()
 --       root.children = SessionsManager.list_breakpoints()
---       UiManager.dashboard.view:refresh(root)
+--       UiManager.dashboard.canvas:refresh(root)
 --     end
 --   })
 --
@@ -153,26 +153,26 @@ end)()
 --
 --
 
-UiManager.help = (function()
-  local HelpWidget = require("debugmaster.widgets.HelpWidget")
-  local root = HelpWidget.new {}
-  local comp = { name = "[H]elp" }
-  local view
-  -- to fix loop require
-  -- https://ericjmritz.wordpress.com/2014/02/06/lua-avoiding-stack-overflows-with-metamethods/
-  return setmetatable(comp, {
-    __index = function(t, k)
-      print("key == ", k)
-      if k == "buf" then
-        if not view then
-          root.groups = require("debugmaster.managers.DmManager").get_groups()
-          view = tree.view.new { root = root, keymaps = {} }
-        end
-        return view.buf
-      end
-    end
-  })
-end)()
+-- UiManager.help = (function()
+--   local HelpWidget = require("debugmaster.widgets.HelpWidget")
+--   local root = HelpWidget.new {}
+--   local comp = { name = "[H]elp" }
+--   local view
+--   -- to fix loop require
+--   -- https://ericjmritz.wordpress.com/2014/02/06/lua-avoiding-stack-overflows-with-metamethods/
+--   return setmetatable(comp, {
+--     __index = function(t, k)
+--       print("key == ", k)
+--       if k == "buf" then
+--         if not view then
+--           root.groups = require("debugmaster.managers.DmManager").get_groups()
+--           view = tree.view.new { root = root, keymaps = {} }
+--         end
+--         return view.buf
+--       end
+--     end
+--   })
+-- end)()
 
 --
 --
@@ -193,7 +193,7 @@ end)()
 --     pattern = "DmCurFrameChanged",
 --     callback = function()
 --       root.children = SessionsManager.list_threads()
---       UiManager.dashboard.view:refresh(root)
+--       UiManager.dashboard.canvas:refresh(root)
 --     end
 --   })
 --
@@ -207,21 +207,23 @@ end)()
 UiManager.sidepanel = require("debugmaster.widgets.multiwin").new()
 
 UiManager.repl = (function()
-  local dap_repl = require("dap.repl")
-  local repl_buf, repl_win = dap_repl.open(nil, "vertical split")
-  api.nvim_win_close(repl_win, true)
-  vim.keymap.set("i", "<C-w>", "<C-S-w>", { buffer = repl_buf })
-  vim.keymap.set("n", "<Tab>", "<CR>", { buffer = repl_buf, remap = true })
-  vim.keymap.del("n", "o", { buffer = repl_buf })
-
-  dap.listeners.after.initialize["repl-hl"] = function()
-    pcall(vim.treesitter.stop, repl_buf)
-    pcall(vim.treesitter.start, repl_buf, vim.o.filetype)
+  local canvas = ui.Canvas.new()
+  after.event_output[events_id] = function(session, body)
+    canvas:push {
+      ---@type dm.WidgetRenderer
+      render = function(self, out)
+        out.lines = {}
+        table.insert(out.lines, { { "Repl Message:", "Comment" } })
+        for line in vim.gsplit(body.output, "\n") do
+          table.insert(out.lines, { { line } })
+        end
+      end,
+    }
   end
 
   return {
     name = "[R]epl",
-    buf = repl_buf,
+    buf = canvas.buf,
   }
 end)()
 
@@ -285,10 +287,9 @@ UiManager.dashboard = (function()
     }
   }
 
-  local view = tree.view.new {
-    root = root,
-    keymaps = { "<CR>", "t", "c", "K", "r", "d", "a" },
-  }
+  local canvas = ui.Canvas.new()
+  canvas:push(root)
+  canvas:add_key_events { "<CR>", "t", "c", "K", "r", "d", "a" }
 
   after.event_stopped["dm"] = function(session, body)
     if not session.threads or not session.stopped_thread_id then
@@ -302,18 +303,18 @@ UiManager.dashboard = (function()
     if prev_ui then
       common.sync(new_ui, prev_ui, function()
         root.children = { new_ui }
-        view:refresh()
+        canvas:refresh()
       end)
     else
       root.children = { new_ui }
-      view:refresh()
+      canvas:refresh()
     end
   end
 
   return {
     name = "[S]tate",
-    buf = view.buf,
-    view = view,
+    buf = canvas.buf,
+    view = canvas,
   }
 end)()
 
@@ -321,7 +322,7 @@ end)()
 UiManager.sidepanel:add_component(UiManager.dashboard)
 UiManager.sidepanel:add_component(UiManager.repl)
 UiManager.sidepanel:add_component(UiManager.terminal)
-UiManager.sidepanel:add_component(UiManager.help)
+-- UiManager.sidepanel:add_component(UiManager.help)
 UiManager.sidepanel:set_active(UiManager.dashboard)
 
 return UiManager
