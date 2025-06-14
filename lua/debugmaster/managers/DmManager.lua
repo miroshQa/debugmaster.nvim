@@ -60,7 +60,7 @@ local float_widgets = {
     {
       key = "df",
       action = function()
-        UiManager.threads.view:refresh()
+        UiManager.threads.canvas:refresh()
         view.popup.new { buf = UiManager.threads.view.buf }
       end,
       desc = "Frames and threads widget"
@@ -68,7 +68,7 @@ local float_widgets = {
     {
       key = "ds",
       action = function()
-        UiManager.sessions.view:refresh()
+        UiManager.sessions.canvas:refresh()
         view.popup.new { buf = UiManager.sessions.view.buf }
       end,
       desc = "Debug sessions widget",
@@ -76,7 +76,7 @@ local float_widgets = {
     {
       key = "db",
       action = function()
-        UiManager.breakpoints.view:refresh()
+        UiManager.breakpoints.canvas:refresh()
         view.popup.new { buf = UiManager.breakpoints.view.buf }
       end,
       desc = "Breakpoints widget",
@@ -162,7 +162,7 @@ local misc_group = {
       action = function()
         local text = vim.trim(vim.fn.getreg('"'))
         UiManager.watches.add(text, function()
-          UiManager.dashboard.view:refresh(UiManager.watches.root)
+          UiManager.dashboard.canvas:refresh(UiManager.watches.root)
           UiManager.sidepanel:set_active_with_open(UiManager.dashboard)
         end)
       end,

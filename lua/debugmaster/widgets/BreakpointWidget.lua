@@ -21,7 +21,7 @@ function BreakpointWidget:render(out)
   out.lines = lines
 end
 
----@type table<string, fun(self: dm.BreakpointWidget, view: dm.TreeView)>
+---@type table<string, fun(self: dm.BreakpointWidget, canvas: dm.Canvas)>
 BreakpointWidget.keymaps = {
   c = function(self)
     local SessionsManager = require("debugmaster.managers.SessionsManager")

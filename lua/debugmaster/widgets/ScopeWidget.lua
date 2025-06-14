@@ -39,12 +39,12 @@ function ScopeWidget:load(cb)
   VariableWidget.load(self, cb)
 end
 
----@type table<string, fun(self: dm.ScopeWidget, view: dm.TreeView)>
+---@type table<string, fun(self: dm.ScopeWidget, canvas: dm.Canvas)>
 ScopeWidget.keymaps = {
-  ["<CR>"] = function(self, view)
+  ["<CR>"] = function(self, canvas)
     self:load(function()
       self.collapsed = not self.collapsed
-      view:refresh(self)
+      canvas.notify_about_change(self)
     end)
   end,
   ["K"] = common.inspect

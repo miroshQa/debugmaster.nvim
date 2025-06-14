@@ -100,12 +100,12 @@ T["it renders"]["partially"] = function()
   expect_render(view, { "a", "b", "b1", "b2", "c", "c1", "c2" })
 
   root.children[1].collapsed = true
-  view:refresh(root.children[1])
+  canvas:refresh(root.children[1])
   expect_render(view, { "a", "b", "c", "c1", "c2" })
   expect.equality(view.snapshot.nodes_info[root].len, 5)
 
   root.children[1].collapsed = false
-  view:refresh(root.children[1])
+  canvas:refresh(root.children[1])
   expect.equality(view.snapshot.nodes_info[view.root].len, 7)
   expect.equality(view.snapshot.nodes_info[root.children[1]].len, 3)
   expect_render(view, { "a", "b", "b1", "b2", "c", "c1", "c2" })
@@ -132,7 +132,7 @@ T["it renders"]["tree with concealed node"] = function()
   expect_render(view, { "a1", "a2", "c" })
   local b = root.children[1]
   b.conceal = false
-  view:refresh(b)
+  canvas:refresh(b)
   expect_render(view, { "a1", "a2", "b", "c" })
 end
 

@@ -54,13 +54,13 @@ function FrameWidget:load(cb)
   end)
 end
 
----@type table<string, fun(self: dm.FrameWidget, view: dm.TreeView)>
+---@type table<string, fun(self: dm.FrameWidget, canvas: dm.Canvas)>
 FrameWidget.keymaps = {
-  ["<CR>"] = function(self, view)
+  ["<CR>"] = function(self, canvas)
     self:load(function()
       self.collapsed = not self.collapsed
       SessionManager.set_current_frame(self.id)
-      view:refresh()
+      canvas:refresh()
     end)
   end,
 }

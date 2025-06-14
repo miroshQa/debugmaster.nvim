@@ -33,7 +33,7 @@ table_separator_style = none
 trailing_table_separator = keep
 
 # keep/remove/remove_table_only/remove_string_only
-call_arg_parentheses = remove_table_only
+call_arg_parentheses = keep
 
 detect_end_of_line = false
 

@@ -46,14 +46,14 @@ function SessionWidget:load(cb)
   end)
 end
 
----@type table<string, fun(node: dm.SessionWidget, view: dm.TreeView)>
+---@type table<string, fun(node: dm.SessionWidget, canvas: dm.Canvas)>
 SessionWidget.keymaps = {
-  ["<CR>"] = function(self, view)
+  ["<CR>"] = function(self, canvas)
     self:load(function()
       self.collapsed = not self.collapsed
       local SessionsManager = require("debugmaster.managers.SessionsManager")
       SessionsManager.set_active(self.session)
-      view:refresh()
+      canvas:refresh()
     end)
   end
 }

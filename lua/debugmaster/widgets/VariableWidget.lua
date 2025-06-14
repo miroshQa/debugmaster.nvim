@@ -112,18 +112,18 @@ function VariableWidget:load_recursive(timeout, cb)
   load_recursive_internal(self, 0, cb)
 end
 
----@type table<string, fun(self: dm.VariableWidget, view: dm.TreeView)>
+---@type table<string, fun(self: dm.VariableWidget, canvas: dm.Canvas)>
 VariableWidget.keymaps = {
-  ["<CR>"] = function(self, view)
+  ["<CR>"] = function(self, canvas)
     self:load(function()
       self.collapsed = not self.collapsed
-      view:refresh(self)
+      canvas.notify_about_change(self)
     end)
   end,
-  r = function(self, view)
+  r = function(self, canvas)
     print("launch recurvie expand")
     self:load_recursive(500, function()
-      view:refresh(self)
+      canvas.notify_about_change(self)
       print("recursive expand finished")
     end)
   end,
